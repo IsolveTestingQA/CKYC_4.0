@@ -1,0 +1,74 @@
+username=
+password=
+url=https://iflowckyc.isolveapps.in
+dashboardUrl=/dashboard
+
+browser=chrome
+headless=false
+maximizeWindow=true
+deleteCookies=true
+# 0 = do not slow findElements() when element is absent (use explicit waits only)
+implicitWait=0
+explicitWait=8
+loginWait=25
+pageLoadTimeout=40
+
+runtimeMode=API
+continueOnFailure=true
+
+# false = stay on dashboard after login (do not navigate back to login URL)
+resetToLoginAfterScenario=false
+
+# Screenshot pauses (ms) — keep low; page-load wait already runs first
+screenshotDelayBeforeMs=200
+screenshotDelayAfterMs=0
+# false = screenshot only on failure + key steps (not every filter combo)
+screenshotOnEachFilter=false
+
+# Settle after filter click (ms). Card totals can lag sub-cards — code also polls until consistent.
+filterRefreshWaitMs=800
+
+# true = when a blocker stops the next step, show Stop / Retry warning on the page (you click)
+# false = unattended: auto-dismiss SweetAlert and retry once
+interactiveBlockerPrompt=true
+interactiveBlockerWaitSeconds=300
+# Seconds to wait after Continue so you can fix missing UI manually
+manualFixWaitSeconds=60
+
+# End-of-suite completion prompt wait before auto-logout (headed runs)
+suiteCompletionWaitSeconds=120
+
+# Retry a failed scenario once more — only Login/Dashboard/Search/Masters scenarios are
+# eligible (RetryAnalyzer excludes @UserManagement and @ConcurrentSession by tag, always).
+retryFailedScenarios=true
+maxScenarioRetries=1
+
+# Auto-open the HTML report after the run finishes. Extent always works (standalone file).
+# Allure only opens if the `allure` CLI is on PATH; otherwise a log line tells you to run
+# open-allure.ps1 / mvn allure:serve manually — nothing fails either way.
+openExtentReportAfterRun=true
+openAllureReportAfterRun=true
+
+# CKYC/CERSAI bulk-CSV data validation (Com.Ckyc_4_0.validation) — bank-specific config, confirmed
+# from the real Kotak sample data (ORG_CODE/ORG_NAME seen in every row). The bundled reference spec
+# (CKYC_OFFICIAL_DOCUMENTS/CKYC_Cosmos_Validation_Spec) ships Cosmos Bank's values instead; these
+# override it at runtime — see CkycValidationSpec.forConfiguredBank().
+ckycOrgCode=IN4098
+ckycOrgName=KOTAK MAHINDRA PRIME LTD
+# Sample packs so far are all branch CHN02 — this is a placeholder single-branch value, not a real
+# multi-branch master check. If you need to validate files from more than one branch, this must
+# become a lookup against a branch master list instead of one fixed value.
+ckycBrid=CHN02
+# Not yet known for Kotak (only the Cosmos reference spec's COSI/COSM/COSL/COSR patterns exist) —
+# left permissive (non-blank only) until the real per-persona pattern is confirmed.
+ckycCustomerRefPatternInd=^.+$
+ckycCustomerRefPatternMin=^.+$
+ckycCustomerRefPatternLe=^.+$
+ckycCustomerRefPatternRp=^.+$
+
+# Consolidated under Report Output/<report type>/<execution date>/<runner timestamp>/
+excelReportPath=Report Output/Excel
+extentReportPath=Report Output/Extent
+currentDataPath=Current Data
+# Timestamped TXT/HTML logs with red FAILED lines
+executionLogPath=Report Output/Execution Logs

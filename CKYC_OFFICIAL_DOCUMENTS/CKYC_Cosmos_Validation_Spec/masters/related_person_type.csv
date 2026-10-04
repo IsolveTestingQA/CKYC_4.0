@@ -1,0 +1,16 @@
+CODE,RELATIONSHIP,APPLICABLE_FOR
+1,Guardian of minor,Individual
+2,Assignee,Individual
+3,Authorised Representative,Individual
+4,Director,Legal Entity
+5,Promoter,Legal Entity
+6,Karta,Legal Entity
+7,Trustee,Legal Entity
+8,Partner,Legal Entity
+9,Proprietor,Legal Entity
+10,Court Appointed Official,Legal Entity
+11,Beneficiary,Legal Entity
+12,Authorised Signatory,Legal Entity
+13,Beneficial Owner,Legal Entity
+14,Power of Attorney holder,Legal Entity
+15,Other,Legal Entity

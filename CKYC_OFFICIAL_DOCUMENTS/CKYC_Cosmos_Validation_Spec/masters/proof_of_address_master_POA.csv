@@ -1,0 +1,25 @@
+ID,NAME,CONSTITUTION,REMARKS
+01,Proof of Possession of Aadhaar,Individual,Maximum 12 characters allowed. Only last 4 digits will be accepted
+02,Passport,Individual,
+03,Driving License,Individual,
+04,Voters Identity Card,Individual,
+05,NREGA Job Card,Individual,
+06,Certificate of Incorporation/Formation,Legal Entity/Other than Individuals,
+07,Registration Certificate,Legal Entity/Other than Individuals,
+08,National Population Register Letter,Individual,
+09,E-KYC Authentication,Individual,Maximum 12 characters allowed. Only last 4 digits will be accepted
+10,Offline verification of Aadhaar,Individual,Maximum 12 characters allowed. Only last 4 digits will be accepted
+11,"Utility bill which is not more than two months old of any service provider (electricity, telephone, post-paid mobile phone, piped gas, water bill).",Individual,Deemed Proof of Address – 01. (ID Details and Images not required)
+12,Property or Municipal Tax receipt.,Individual,Deemed Proof of Address – 02 (ID Details and Images not required)
+13,"Pension or family pension payment orders (PPOs) issued to retired employees by Government Departments or Public Sector Undertakings, if they contain the address.",Individual,Deemed Proof of Address – 03 (ID Details and Images not required)
+14,"Letter of allotment of accommodation from employer issued by State or Central Government departments, statutory or regulatory bodies, public sector undertakings, scheduled commercial banks, financial institutions and listed companies. Similarly, leave and license agreements with such employers allotting official accommodation.",Individual,Deemed Proof of Address – 04 (ID Details and Images not required)
+15,Self Declaration,Individual,Value permitted only Proof of current address where POI&A is Aadhaar (ID Details and Images not required)
+16,Documents issued by the Government departments of foreign jurisdictions and letter issued by the Foreign Embassy or Mission in India API tag: <FOREIGN_NATIONAL_ID>,Individual,"If selected, the residential status should be foreign national, and the proof of address and identity should be any one of Passport/Voter ID/Driving License. If Proof of Current Address is selected as 16, Image will be mandatory while the ID number will be optional"
+99,Other,Individual,Values not permitted for upload and update. This will only be provided in download
+S01,"Utility bill which is not more than two months old of any service provider (electricity, telephone, post-paid mobile phone, piped gas, water bill).",Individual,Values not permitted for upload and update. This will only be provided in download
+S02,Property or Municipal Tax receipt.,Individual,Values not permitted for upload and update. This will only be provided in download
+S03,Bank account or Post Office savings bank account statement.,Individual,Values not permitted for upload and update. This will only be provided in download
+S04,"Pension or family pension payment orders (PPOs) issued to retired employees by Government Departments or Public Sector Undertakings, if they contain the address.",Individual,Values not permitted for upload and update. This will only be provided in download
+S05,"Letter of allotment of accommodation from employer issued by State or Central Government departments, statutory or regulatory bodies, public sector undertakings, scheduled commercial banks, financial institutions and listed companies. Similarly, leave and license agreements with such employers allotting official accommodation.",Individual,Values not permitted for upload and update. This will only be provided in download
+S06,Documents issued by Government departments of foreign jurisdictions and letter issued by Foreign Embassy or Mission in India.,Individual,Values not permitted for upload and update. This will only be provided in download
+99,Others,Legal Entity,

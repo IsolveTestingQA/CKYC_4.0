@@ -1,0 +1,480 @@
+================================================================================
+ CKYC 4.0 — COMPLETE MODULE FLOWS, ROLES & COVERAGE
+ Generated: 19-Aug-2026
+ App URL: https://iflowckyc.isolveapps.in
+================================================================================
+
+TABLE OF CONTENTS
+─────────────────
+1. Login Module
+2. Dashboard Module
+3. Masters Module
+   3.1 State Master
+   3.2 District Master
+   3.3 Pincode Master
+   3.4 Hierarchy Master (FI / Region / CPC / Branch)
+4. Search And Download Module
+   4.1 Search
+   4.2 Download (Deferred)
+5. User Management Module
+   5.1 Users (Maker-Checker)
+   5.2 Roles (Maker-Checker)
+
+================================================================================
+1. LOGIN MODULE
+================================================================================
+Feature File : Features/1_Login/1_Login.feature
+Tags         : @Login @Positive @Smoke
+Runner       : TestCKYCAllRunner (or individual)
+
+FLOW:
+  1. Open CKYC login page
+  2. Select runtime mode (API / Mock) from config.properties
+  3. Enter username and password from config.properties
+  4. Click Sign In
+  5. Handle "Active session detected" dialog if present (click "Log out other session & continue")
+  6. Verify: user lands on dashboard URL
+
+ROLES TESTED:
+  - Default user from config.properties (auto / Welcome@123)
+
+COVERAGE:
+  [+] Valid credential login
+  [+] Runtime mode selection (API vs Mock)
+  [+] Active session handling
+  [-] Invalid credentials (not yet automated)
+  [-] Locked account login attempt (not yet automated)
+
+================================================================================
+2. DASHBOARD MODULE
+================================================================================
+Feature File : Features/2_Dashboard/2_Dashboard.feature
+Tags         : @Dashboard @Positive @Smoke
+Runner       : TestCKYCAllRunner
+
+FLOW:
+  1. Login and land on dashboard
+  2. Discover all available dashboard filters from UI dynamically
+  3. For each filter combination:
+     a. Click filter
+     b. Collect summary card counts
+     c. Store sub-item counts
+  4. Export all collected data to Excel report
+
+ROLES TESTED:
+  - Admin (auto) — has full dashboard access
+
+COVERAGE:
+  [+] Dynamic filter discovery (no hardcoded filter names)
+  [+] Summary card counts for all filter combos
+  [+] Sub-item data collection
+  [+] Excel export of dashboard data
+  [-] Dashboard with restricted role (limited filters) — not yet tested
+
+================================================================================
+3. MASTERS MODULE
+================================================================================
+
+────────────────────────────────────────
+3.1 STATE MASTER
+────────────────────────────────────────
+Feature File : Features/3_Masters/1_State/3_StateMaster.feature
+Tags         : @Masters @StateMaster @Positive @Smoke
+
+FLOW:
+  1. Open State Master from Masters side menu
+  2. Verify page displayed
+  3. Verify badges: Total = Active + Inactive
+  4. Load all states into memory map (code → name)
+  5. Clear Create State form → verify fields empty
+  6. Validate State Code and State Name field rules:
+     - Max length
+     - Allowed characters
+     - Required field checks
+  7. Verify existing state cannot be duplicated
+  8. Create a unique TEST state (safe — only TEST prefixed)
+  9. Edit only the newly created TEST state
+  10. Toggle (activate/deactivate) only the TEST state
+  11. Search the TEST state
+  12. Random search from the loaded map with retry
+
+ROLES TESTED:
+  - Admin (auto)
+
+COVERAGE:
+  [+] Badge count validation (Total = Active + Inactive)
+  [+] Full state map load
+  [+] Field rule validation (length, characters, required)
+  [+] Duplicate prevention
+  [+] Safe CRUD (only TEST records)
+  [+] Edit, toggle, search
+  [+] Random search with retry
+
+────────────────────────────────────────
+3.2 DISTRICT MASTER
+────────────────────────────────────────
+Feature File : Features/3_Masters/2_District/4_DistrictMaster.feature
+Tags         : @Masters @DistrictMaster @Positive @Smoke
+
+FLOW:
+  1. Open District Master
+  2. Verify page displayed
+  3. Verify badges: Total = Active + Inactive
+  4. Ensure a test-safe State exists (prerequisite)
+  5. Load districts into memory map
+  6. Verify existing district cannot be duplicated
+  7. Validate District Name field rules
+  8. Verify State filter for two random States
+  9. Random search two districts from map
+  10. Create unique TEST district (linked to test State)
+  11. Edit only the TEST district
+  12. Toggle only the TEST district
+  13. Search the TEST district
+
+ROLES TESTED:
+  - Admin (auto)
+
+COVERAGE:
+  [+] Badge validation
+  [+] State dependency (test-safe state)
+  [+] Duplicate prevention
+  [+] Field rules
+  [+] State filter verification
+  [+] Safe CRUD, edit, toggle, search
+
+────────────────────────────────────────
+3.3 PINCODE MASTER
+────────────────────────────────────────
+Feature File : Features/3_Masters/3_Pincode/5_PincodeMaster.feature
+Tags         : @Masters @PincodeMaster @Positive @Smoke
+
+FLOW:
+  1. Open Pincode Master
+  2. Verify page displayed
+  3. Verify badges: Total >= Active
+  4. Ensure test-safe State and District exist
+  5. Load visible pincodes into memory map
+  6. Verify existing pincode cannot be duplicated
+  7. Validate Pincode field rules (6-digit numeric, etc.)
+  8. Verify State filter for two random States
+  9. Random search two pincodes from map
+  10. Create unique TEST pincode (linked to test State + District)
+  11. Edit only the TEST pincode
+  12. Toggle only the TEST pincode
+  13. Search the TEST pincode
+
+ROLES TESTED:
+  - Admin (auto)
+
+COVERAGE:
+  [+] Badge validation
+  [+] State + District dependency
+  [+] Duplicate prevention
+  [+] Field rules (numeric, length)
+  [+] State filter
+  [+] Safe CRUD, edit, toggle, search
+
+────────────────────────────────────────
+3.4 HIERARCHY MASTER (FI / Region / CPC / Branch)
+────────────────────────────────────────
+Feature File : Features/3_Masters/4_Hierarchy/6_HierarchyMaster.feature
+Tags         : @Masters @HierarchyMaster @Positive @Smoke
+
+FLOW (4 scenarios — one per tab):
+  FI Master Tab:
+    1. Open Hierarchy Master
+    2. Verify summary chips visible
+    3. Validate FI tab fields, safe CRUD, search
+
+  CPC Master Tab:
+    1. Open Hierarchy Master
+    2. Validate CPC tab fields, safe CRUD, search
+
+  Region Tab:
+    1. Open Hierarchy Master
+    2. Validate Region tab fields, safe CRUD, search
+
+  Branch Tab:
+    1. Open Hierarchy Master
+    2. Validate Branch tab fields, safe CRUD, search
+
+ROLES TESTED:
+  - Admin (auto)
+
+COVERAGE:
+  [+] All 4 tabs (FI, CPC, Region, Branch)
+  [+] Summary chips
+  [+] Field validation per tab
+  [+] Safe CRUD per tab
+  [+] Search per tab
+
+================================================================================
+4. SEARCH AND DOWNLOAD MODULE
+================================================================================
+
+────────────────────────────────────────
+4.1 SEARCH
+────────────────────────────────────────
+Feature File : Features/4_SearchAndDownload/1_Search/6_Search.feature
+Tags         : @SearchAndDownload @Search @Positive @Smoke
+
+FLOW:
+  1. Open Search from Search And Download menu
+  2. Verify Search page displayed
+  3. Verify document type is required before input
+  4. Validate PAN Search input rules:
+     - Format: AAAAA0000A
+     - Length: exactly 10
+     - Invalid PAN handling
+  5. Search configured PAN → validate all returned CKYC fields → save download identifiers
+  6. Validate Mobile Search input rules:
+     - 10-digit numeric
+     - Invalid mobile handling
+  7. Search configured mobile → record outcome
+  8. Clear Search → verify reset state
+
+ROLES TESTED:
+  - Admin (auto)
+
+COVERAGE:
+  [+] Document type prerequisite
+  [+] PAN input validation (format, length)
+  [+] PAN search with full field validation
+  [+] Download identifier capture (for future Download module)
+  [+] Mobile input validation
+  [+] Mobile search
+  [+] Search reset/clear
+
+────────────────────────────────────────
+4.2 DOWNLOAD (Deferred)
+────────────────────────────────────────
+Feature File : Features/4_SearchAndDownload/2_Download/7_Download.feature
+Tags         : @SearchAndDownload @Download @Deferred
+
+STATUS: Intentionally deferred until Download UI flow is reviewed.
+Will consume: search-result.properties (maskedCkycNumber, ckycReferenceId, etc.)
+
+================================================================================
+5. USER MANAGEMENT MODULE
+================================================================================
+
+────────────────────────────────────────
+5.1 USERS (Maker-Checker)
+────────────────────────────────────────
+Feature File : Features/5_UserManagement/1_Users/7_UsersMakerChecker.feature
+Tags         : @UserManagement @Users @Positive @Smoke @Negative
+
+ACCOUNTS:
+  Maker          : auto / Welcome@123 (Admin role)
+  Primary Checker: shyam / Welcome@123 (Sales Team role)
+  Branch Checker : Nivijay / Welcome@123
+  Same-role Neg  : admin / KMPL@123 (Admin role — same as maker)
+
+POSITIVE FLOW:
+  1.  Open /admin/users → verify Maker controls displayed
+  2.  Validate mandatory Add User fields (blank form → Save → errors)
+  3.  Validate field length and datatype negatives
+  4.  Verify existing login name is rejected (duplicate check)
+  5.  Submit unique TEST AUTO user request:
+      - Fill: First Name, Last Name, Designation, Email, Mobile, Login Name, SOL, Role
+      - Screenshot before Save → Save → capture toaster → screenshot after
+  6.  Maker self-approve attempt → verify blocked
+  7.  Same-role admin Checker attempt → verify blocked
+  8.  Independent Checker shyam approves:
+      - Logout auto → Login shyam → /admin/users → Checker mode
+      - Find request in queue → verify: Login Name, Type=Create, Maker=auto, Date, Status=PENDING
+      - View details → screenshot → Approve → capture toaster → screenshot
+  9.  Verify user Active in grid
+  10. Login as new user (unique login / Welcome@123):
+      - Verify dashboard loads
+      - Check navbar modules match assigned role permissions
+      - Screenshot → Logout
+  11. Edit TEST AUTO user:
+      - auto edits → Save → shyam approves edit
+  12. Lock TEST AUTO user:
+      - auto locks → different checker approves → verify Locked status
+  13. Unlock TEST AUTO user:
+      - auto unlocks → different checker approves → verify Active status
+  14. Dormant TEST AUTO user:
+      - auto sets dormant → different checker approves → verify status
+  15. Revert flow:
+      - Create request → checker reverts → verify maker sees reverted request with remarks → Resubmit
+  16. Restore maker session on Users page
+
+NEGATIVE FLOW:
+  1. Self-approve: auto approves own → blocked (BUG: no toaster, redirects to login)
+  2. Same-role: admin (Admin) approves auto's (Admin) request → blocked
+  3. Mandatory field validation errors
+  4. Duplicate login rejection
+  5. Invalid email / exceeding field lengths
+
+CHECKER QUEUE VERIFICATION CHECKLIST:
+  Before every approve/revert:
+  - [ ] Login Name matches
+  - [ ] Type matches (Create/Edit/Lock/Unlock/Dormant)
+  - [ ] Maker name matches (who submitted)
+  - [ ] Submitted date is recent
+  - [ ] Status = PENDING
+  - [ ] View details confirms all submitted data
+
+BUGS FOUND:
+  - BUG-001: Self-approve redirects to login with NO toaster message (expected: error toast)
+
+────────────────────────────────────────
+5.2 ROLES (Maker-Checker)
+────────────────────────────────────────
+Feature File : Features/5_UserManagement/2_Roles/8_RolesMakerChecker.feature
+Tags         : @UserManagement @Roles @Positive @Smoke @Negative
+
+ACCOUNTS:
+  Same as Users (auto, shyam, admin)
+
+POSITIVE FLOW:
+  1. Open /admin/roles → verify Maker controls displayed
+  2. Validate mandatory Add Role fields (blank form → Save → errors)
+  3. Submit unique TEST AUTO role:
+     - Fill: Role Name, Role Code, Description
+     - Screenshot → Save → capture toaster
+  4. Maker self-approve attempt → blocked
+  5. Same-role admin Checker → blocked
+  6. Independent Checker shyam approves:
+     - Logout → Login shyam → /admin/roles → Checker mode
+     - Find role → View details → Approve → toaster → screenshot
+  7. Configure Permissions on approved role:
+     - auto opens role → Configure Permissions
+     - Toggle parent/child module checkboxes
+     - Save Permissions → verify
+  8. Verify permissions in navbar:
+     - Assign configured role to a test user
+     - Login as that user → check navbar modules match
+     - Use different roles for comparison
+  9. Never touch Super Admin role
+  10. Restore maker session on Roles page
+
+NEGATIVE FLOW:
+  1. Self-approve → blocked
+  2. Same-role approve → blocked
+  3. Mandatory field validation
+  4. Duplicate role code/name rejection
+
+================================================================================
+KEY RULES (Apply to ALL modules)
+================================================================================
+
+1. SAFE DATA: Only create/edit/delete TEST-prefixed records. Never modify seed data.
+2. SCREENSHOTS: Before and after every: Submit, Create, Edit, Approve, Revert, Lock, Unlock.
+3. TOASTER MESSAGES: Always capture. Missing expected toaster = BUG.
+4. MAKER-CHECKER IDENTITY: Log who made the request and who approved/reverted.
+5. REUSABLE: Every scenario must be independently re-runnable.
+6. SOFT ASSERTIONS: Use StepLog.check / SoftAssertManager — don't stop on first failure.
+7. NO HARDCODING: Use properties files for accounts, config for URLs/credentials.
+8. LOCATORS: Use aria-label, role, data-testid. Verify with MCP before hardcoding XPaths.
+
+================================================================================
+EXECUTION ORDER (TestCKYCAllRunner)
+================================================================================
+
+1. Login          → establishes session
+2. Dashboard      → collects data
+3. Masters        → State → District → Pincode → Hierarchy (FI/CPC/Region/Branch)
+4. Search         → PAN + Mobile search
+5. User Management → Users (maker-checker) → Roles (maker-checker)
+
+================================================================================
+UI ELEMENT REFERENCE (MCP-verified 19-Aug-2026)
+================================================================================
+
+HEADER BAR:
+  - Display name label: generic[aria-label="<display name>"]
+  - Role label: generic showing role (e.g. "Admin", "Sales Team")
+  - Quick options: button[aria-label="Expand quick options"] — NEVER USE IN TESTS
+  - Avatar button: button[aria-label="<display name>"] with child Avatar circle
+  - Avatar menu (on click): [role="menu"] with menuitems:
+      1. Change Password
+      2. Dark Mode
+      3. Logout — click this for logout
+
+MAKER/CHECKER TOGGLE:
+  - Container: group[aria-label="Maker or Checker mode"]
+  - Maker: button[aria-label="Maker mode"] (aria-pressed="true" when active)
+  - Checker: button[aria-label="Checker mode"] (aria-pressed="true" when active)
+
+USERS PAGE — MAKER MODE:
+  - Heading: "User Management"
+  - Stats: total users, active, matching filters, role types
+  - Add User: button with aria-label "Create a new user..."
+  - Filters: User Type (combobox), SOL/REG/CPC (combobox), Role (combobox)
+  - Search: input[placeholder="Search name / login / email..."]
+  - Table columns: S.No, User, Login Name, Role, Type/Branch, Status, Actions
+  - Row actions: Edit, Deactivate/Activate, Lock Account, Reset Password, Assign Role, View Audit Info, Delete (if permitted)
+  - My Requests section: Login Name, Type, Status, Checker remarks, View
+
+USERS PAGE — CHECKER MODE:
+  - Heading: "User Approvals"
+  - Stats: pending, approved, reverted
+  - Queue heading: "User request queue"
+  - Status filter: combobox (default: Pending)
+  - Table columns: Login Name, Type, Maker, Submitted, Status, Actions
+  - Row actions: View details (eye), Approve (green check), Revert to maker (blue)
+
+LOGIN PAGE:
+  - Username: input[name="loginId"] or textbox "Username"
+  - Password: input[name="password"] or textbox "Password"
+  - Sign In: button with text "Sign In"
+  - Active Session Dialog: button "Log out other session & continue"
+
+================================================================================
+MCP LIVE EXECUTION LOG (19-Aug-2026)
+================================================================================
+
+POSITIVE FLOW EXECUTED:
+
+Step 1 - CREATE USER (Maker=auto):
+  Login Name : testautomcp01
+  First Name : TEST AUTO
+  Last Name  : QA TESTER
+  Designation: QA Engineer
+  Email      : testauto@isolve.com
+  Mobile     : 9876543210
+  SOL/REG/CPC: IN0702 - Cosmos Bank
+  Role       : Sales Team
+  Status     : Active
+  Result     : CREATED — appeared in My Requests (5 awaiting approval)
+  Toaster    : NOT CAPTURED (may have appeared briefly) — needs investigation
+
+Step 2 - LOGOUT auto:
+  Method     : Avatar button (aria-label="Automation") → Logout menuitem
+  Result     : SUCCESS — redirected to login page
+
+Step 3 - LOGIN shyam (Checker):
+  Result     : SUCCESS — dashboard loaded
+
+Step 4 - CHECKER APPROVE (Checker=shyam):
+  Navigate   : /admin/users → Checker mode toggle
+  Queue      : 5 pending, testautomcp01 at top
+  Verify     : Login Name=testautomcp01, Type=Create, Maker=auto, Status=PENDING
+  View Detail: All fields match submitted data
+  Approve    : SUCCESS — user count 38→39, testautomcp01 Active in grid
+  Toaster    : NOT CAPTURED
+
+Step 5 - LOGIN AS NEW USER (testautomcp01 / Welcome@123):
+  Result     : FAILED — password field shows red (invalid credentials)
+  Finding    : Newly created users cannot login with default password Welcome@123
+               May need Reset Password action first, or system assigns different password
+
+BUGS FOUND:
+  BUG-001: Self-approve → redirects to login with NO toaster (expected error toast)
+  BUG-002: No toaster confirmation after user create Save
+  BUG-003: New user cannot login with Welcome@123 (password not set or different default)
+
+TECHNICAL FINDINGS:
+  1. Avatar button uses display name as aria-label (e.g. "Automation" not "auto")
+  2. Logout is a [role=menuitem] in avatar dropdown — works reliably
+  3. Checker toggle sometimes needs 2 clicks (first click may bounce back)
+  4. Sign In button click() doesn't always trigger — form submit event needed
+  5. Approve button is index [1] in checker row buttons (View=0, Approve=1, Revert=2)
+  6. "Expand quick options" button is NEVER needed for any test flow
+
+================================================================================
+END OF DOCUMENT
+================================================================================

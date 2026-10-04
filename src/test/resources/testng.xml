@@ -1,0 +1,16 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="CKYC_4.0_Suite" configfailurepolicy="continue" verbose="1">
+    <!-- Default: full suite. For module-only runs in IntelliJ, execute:
+         Com.Ckyc_4_0.TestRunner.TestDashboardRunner
+         Com.Ckyc_4_0.TestRunner.TestMastersRunner
+         Com.Ckyc_4_0.TestRunner.TestSearchRunner
+         Com.Ckyc_4_0.TestRunner.TestSearchAndDownloadRunner
+         Com.Ckyc_4_0.TestRunner.TestUserManagementRunner
+         Com.Ckyc_4_0.TestRunner.TestConcurrentSessionRunner
+         Com.Ckyc_4_0.TestRunner.TestCKYCAllRunner -->
+    <test name="CKYC_All_Modules" preserve-order="true">
+        <classes>
+            <class name="Com.Ckyc_4_0.TestRunner.TestCKYCAllRunner"/>
+        </classes>
+    </test>
+</suite>

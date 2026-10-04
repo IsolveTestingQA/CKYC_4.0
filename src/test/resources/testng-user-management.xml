@@ -1,0 +1,10 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!-- User Management only: Login + Users Positive/Negative + Roles Positive/Negative -->
+<suite name="CKYC_4.0_UserManagement_Suite" configfailurepolicy="continue" verbose="1">
+    <test name="CKYC_UserManagement_Only" preserve-order="true">
+        <classes>
+            <class name="Com.Ckyc_4_0.TestRunner.TestUserManagementRunner"/>
+        </classes>
+    </test>
+</suite>
+

@@ -1,0 +1,21 @@
+CODE,DESCRIPTION,RECORD_TYPE
+1,Individual,Individual
+A,Sole Proprietorship,Legal Entity / Other than Individual
+B,Partnership Firm,Legal Entity / Other than Individual
+C,HUF,Legal Entity / Other than Individual
+D,Private Limited Company,Legal Entity / Other than Individual
+E,Public Limited Company,Legal Entity / Other than Individual
+F,Society,Legal Entity / Other than Individual
+G,Association of Persons (AOP)/ Body of Individuals (BOI),Legal Entity / Other than Individual
+H,Trust,Legal Entity / Other than Individual
+I,Liquidator,Legal Entity / Other than Individual
+J,Limited Liability Partnership,Legal Entity / Other than Individual
+K,Artificial Liability Partnership,Legal Entity / Other than Individual
+L,Public Sector Banks,Legal Entity / Other than Individual
+M,Central/State Government Departments/Agency,Legal Entity / Other than Individual
+N,"Section 8 (Companies Act, 2013)",Legal Entity / Other than Individual
+O,Artificial Juridical Person,Legal Entity / Other than Individual
+P,International Organisation or Agency/Foreign embasssy or consular office etc.,Legal Entity / Other than Individual
+Q,Not Categorized,Legal Entity / Other than Individual
+R,Others,Legal Entity / Other than Individual
+S,Foreign Portfolio Investors,Legal Entity / Other than Individual
