@@ -1,0 +1,261 @@
+Locator_ID,Module,Tab,Key,Kind,Mandatory,MaxLen
+COM_SHELL_Maker_role,Individual,Shell,Maker role,button,,
+COM_SHELL_Checker_role,Individual,Shell,Checker role,button,,
+COM_SHELL_DVS_Individual,Individual,Shell,DVS Individual,button,,
+COM_SHELL_Legal_Entity,Individual,Shell,Legal Entity,button,,
+COM_SHELL_Refresh_page,Individual,Shell,Refresh page,button,,
+COM_SHELL_Queue,Individual,Shell,Queue,tab,,
+COM_SHELL_Image,Individual,Shell,Image,tab,,
+COM_SHELL_dvsQueueSearch,Individual,Shell,dvsQueueSearch,text,,
+COM_SHELL_Zoom_In,Individual,Shell,Zoom In,button,,
+COM_SHELL_Zoom_Out,Individual,Shell,Zoom Out,button,,
+COM_SHELL_Reset,Individual,Shell,Reset,button,,
+COM_SHELL_Rotate_Left,Individual,Shell,Rotate Left,button,,
+COM_SHELL_Rotate_Right,Individual,Shell,Rotate Right,button,,
+COM_SHELL_Hide_Queue_Panel,Individual,Shell,Hide Queue Panel,button,,
+COM_SHELL_Revert_to_Image,Individual,Shell,Revert to Image,button,,
+COM_SHELL_Save,Individual,Shell,Save,button,,
+COM_SHELL_Clear,Individual,Shell,Clear,button,,
+COM_SHELL_Submit_to_Checker,Individual,Shell,Submit to Checker,button,,
+COM_SHELL_Start_Processing,Individual,Shell,Start Processing,button,,
+COM_SHELL_Dismiss_panel,Individual,Shell,Dismiss panel,button,,
+COM_SHELL_Personal_Details,Individual,Shell,Personal Details,tab,,
+COM_SHELL_Identity_POI,Individual,Shell,Identity / POI,tab,,
+COM_SHELL_Contact_Address,Individual,Shell,Contact & Address,tab,,
+COM_SHELL_Related_Persons,Individual,Shell,Related Persons,tab,,
+COM_SHELL_KYC_Verification,Individual,Shell,KYC Verification,tab,,
+IND_PER_applicationType,Individual,Personal Details,applicationType,dropdown,M,
+IND_PER_accountType,Individual,Personal Details,accountType,dropdown,M,
+IND_PER_minorFlag,Individual,Personal Details,minorFlag,checkbox,,
+IND_PER_branch,Individual,Personal Details,branch,dropdown,M,
+IND_PER_prefix,Individual,Personal Details,prefix,dropdown,M,
+IND_PER_firstName,Individual,Personal Details,firstName,text,M,50
+IND_PER_middleName,Individual,Personal Details,middleName,text,,50
+IND_PER_lastName,Individual,Personal Details,lastName,text,,50
+IND_PER_nameMatchingWithOvd,Individual,Personal Details,nameMatchingWithOvd,checkbox,,
+IND_PER_photoMatchingWithOvd,Individual,Personal Details,photoMatchingWithOvd,checkbox,,
+IND_PER_maidenPrefix,Individual,Personal Details,maidenPrefix,dropdown,,
+IND_PER_maidenFirstName,Individual,Personal Details,maidenFirstName,text,,33
+IND_PER_maidenMiddleName,Individual,Personal Details,maidenMiddleName,text,,33
+IND_PER_maidenLastName,Individual,Personal Details,maidenLastName,text,,33
+IND_PER_fatherSpouseFlag_FATHER,Individual,Personal Details,fatherSpouseFlag,radio,,
+IND_PER_fatherSpouseFlag_SPOUSE,Individual,Personal Details,fatherSpouseFlag,radio,,
+IND_PER_fatherSpouseFlag_MOTHER,Individual,Personal Details,fatherSpouseFlag,radio,,
+IND_PER_fatherPrefix,Individual,Personal Details,fatherPrefix,dropdown,M,
+IND_PER_fatherFirstName,Individual,Personal Details,fatherFirstName,text,M,50
+IND_PER_fatherMiddleName,Individual,Personal Details,fatherMiddleName,text,,50
+IND_PER_fatherLastName,Individual,Personal Details,fatherLastName,text,,50
+IND_PER_spousePrefix,Individual,Personal Details,spousePrefix,dropdown,,
+IND_PER_spouseFirstName,Individual,Personal Details,spouseFirstName,text,,33
+IND_PER_spouseMiddleName,Individual,Personal Details,spouseMiddleName,text,,33
+IND_PER_spouseLastName,Individual,Personal Details,spouseLastName,text,,33
+IND_PER_motherPrefix,Individual,Personal Details,motherPrefix,dropdown,M,
+IND_PER_motherFirstName,Individual,Personal Details,motherFirstName,text,M,50
+IND_PER_motherMiddleName,Individual,Personal Details,motherMiddleName,text,,50
+IND_PER_motherLastName,Individual,Personal Details,motherLastName,text,,50
+IND_PER_dob,Individual,Personal Details,dob,date,M,10
+IND_PER_Open_calendar_for_Date_of_Birth,Individual,Personal Details,Open calendar for Date of Birth *,button,,
+IND_PER_dobMatchingWithOvd,Individual,Personal Details,dobMatchingWithOvd,checkbox,,
+IND_PER_gender,Individual,Personal Details,gender,dropdown,M,
+IND_PER_genderProvidedInOvd,Individual,Personal Details,genderProvidedInOvd,checkbox,,
+IND_PER_genderMatchingWithOvd,Individual,Personal Details,genderMatchingWithOvd,checkbox,,
+IND_PER_residentialStatus,Individual,Personal Details,residentialStatus,dropdown,,
+IND_PER_residentialStatusSupportedWithDoc,Individual,Personal Details,residentialStatusSupportedWithDoc,checkbox,,
+IND_PER_nationalitySupportedWithDoc,Individual,Personal Details,nationalitySupportedWithDoc,checkbox,,
+IND_PER_citizenship,Individual,Personal Details,citizenship,dropdown,M,
+IND_PER_maritalStatus,Individual,Personal Details,maritalStatus,dropdown,,
+IND_PER_occupation,Individual,Personal Details,occupation,dropdown,,
+IND_PER_pan,Individual,Personal Details,pan,masked-text,,10
+IND_PER_Show_PAN_Number,Individual,Personal Details,Show PAN Number,button,,
+IND_PER_form60,Individual,Personal Details,form60,checkbox,,
+IND_PER_form61,Individual,Personal Details,form61,checkbox,,
+IND_PER_panVerified,Individual,Personal Details,panVerified,checkbox,,
+IND_PER_differentlyAbled_YES,Individual,Personal Details,differentlyAbled,radio,,
+IND_PER_differentlyAbled_NO,Individual,Personal Details,differentlyAbled,radio,,
+IND_PER_typeOfImpairment,Individual,Personal Details,typeOfImpairment,dropdown,,
+IND_PER_percentageOfImpairment,Individual,Personal Details,percentageOfImpairment,text,,3
+IND_PER_udidNumber,Individual,Personal Details,udidNumber,text,,18
+IND_PER_otherTypeOfImpairment,Individual,Personal Details,otherTypeOfImpairment,text,,150
+IND_PER_disabilityDate,Individual,Personal Details,disabilityDate,date,,10
+IND_PER_Open_calendar_for_Disability_date,Individual,Personal Details,Open calendar for Disability date,button,,
+IND_PER_permanentDisability,Individual,Personal Details,permanentDisability,checkbox,,
+IND_PER_pwdSupportedWithDoc,Individual,Personal Details,pwdSupportedWithDoc,checkbox,,
+IND_POI_poiType,Individual,Identity / POI,poiType,dropdown,M,
+IND_POI_poiNumber,Individual,Identity / POI,poiNumber,masked-text,M,20
+IND_POI_Show_Document_Number,Individual,Identity / POI,Show Document Number *,button,,
+IND_POI_proofSubmitted,Individual,Identity / POI,proofSubmitted,checkbox,,
+IND_POI_idVerifyStatus,Individual,Identity / POI,idVerifyStatus,dropdown,,
+IND_POI_modeOfAadhaarVerification,Individual,Identity / POI,modeOfAadhaarVerification,dropdown,,
+IND_POI_modeOfAuthentication,Individual,Identity / POI,modeOfAuthentication,dropdown,,
+IND_POI_passportExpiryDate,Individual,Identity / POI,passportExpiryDate,date,M (when A),10
+IND_POI_Open_calendar_for_Passport_expiry_date,Individual,Identity / POI,Open calendar for Passport expiry date *,button,,
+IND_POI_dlExpiryDate,Individual,Identity / POI,dlExpiryDate,date,,10
+IND_POI_Open_calendar_for_Driving_Licence_expiry_date,Individual,Identity / POI,Open calendar for Driving Licence expiry date,button,,
+IND_POI_certifiedCopyVerifiedOvd,Individual,Identity / POI,certifiedCopyVerifiedOvd,checkbox,,
+IND_POI_equivalentEdoc,Individual,Identity / POI,equivalentEdoc,checkbox,,
+IND_POI_verifiedFromDigilocker,Individual,Identity / POI,verifiedFromDigilocker,checkbox,,
+IND_POI_ekycDataFromUidai,Individual,Identity / POI,ekycDataFromUidai,checkbox,,
+IND_POI_offlineDataReceived,Individual,Identity / POI,offlineDataReceived,checkbox,,
+IND_POI_presencePassportMea,Individual,Identity / POI,presencePassportMea,checkbox,,
+IND_POI_presenceVoterEci,Individual,Identity / POI,presenceVoterEci,checkbox,,
+IND_POI_presenceDlRto,Individual,Identity / POI,presenceDlRto,checkbox,,
+IND_POI_presenceNrega,Individual,Identity / POI,presenceNrega,checkbox,,
+IND_POI_presenceNpr,Individual,Identity / POI,presenceNpr,checkbox,,
+IND_POI_Show_Passport_number,Individual,Identity / POI,Show Passport number,button,,
+IND_CON_mobISD,Individual,Contact & Address,mobISD,autocomplete,,
+IND_CON_mobNo,Individual,Contact & Address,mobNo,text,,10
+IND_CON_mobileOtpValidated,Individual,Contact & Address,mobileOtpValidated,checkbox,,
+IND_CON_mobileThirdPartyValidated,Individual,Contact & Address,mobileThirdPartyValidated,checkbox,,
+IND_CON_emailID,Individual,Contact & Address,emailID,text,,254
+IND_CON_emailOtpValidated,Individual,Contact & Address,emailOtpValidated,checkbox,,
+IND_CON_addressType,Individual,Contact & Address,addressType,dropdown,M,
+IND_CON_proofOfAddress,Individual,Contact & Address,proofOfAddress,dropdown,M,
+IND_CON_poaRefNo,Individual,Contact & Address,poaRefNo,text,M,20
+IND_CON_add1,Individual,Contact & Address,add1,text,M,55
+IND_CON_add2,Individual,Contact & Address,add2,text,,55
+IND_CON_add3,Individual,Contact & Address,add3,text,,55
+IND_CON_country,Individual,Contact & Address,country,autocomplete,M,
+IND_CON_pincode,Individual,Contact & Address,pincode,text,M,6
+IND_CON_city,Individual,Contact & Address,city,text,M,50
+IND_CON_district,Individual,Contact & Address,district,autocomplete,,
+IND_CON_state,Individual,Contact & Address,state,autocomplete,,
+IND_CON_permPincodeOthers,Individual,Contact & Address,permPincodeOthers,text,,6
+IND_CON_permDigipin,Individual,Contact & Address,permDigipin,text,,10
+IND_CON_permAddressSupportedDoc,Individual,Contact & Address,permAddressSupportedDoc,checkbox,,
+IND_CON_permAddressMatchOvd,Individual,Contact & Address,permAddressMatchOvd,dropdown,,
+IND_CON_Same_as_Current_Permanent_Address,Individual,Contact & Address,Same as Current / Permanent Address,checkbox,,
+IND_CON_corrAddressType,Individual,Contact & Address,corrAddressType,dropdown,M*,
+IND_CON_corrProof,Individual,Contact & Address,corrProof,dropdown,M*,
+IND_CON_corrPoaRefNo,Individual,Contact & Address,corrPoaRefNo,text,M*,20
+IND_CON_corrAdd1,Individual,Contact & Address,corrAdd1,text,M*,55
+IND_CON_corrAdd2,Individual,Contact & Address,corrAdd2,text,,55
+IND_CON_corrAdd3,Individual,Contact & Address,corrAdd3,text,,55
+IND_CON_corrCountry,Individual,Contact & Address,corrCountry,autocomplete,M*,
+IND_CON_corrPincode,Individual,Contact & Address,corrPincode,text,M*,6
+IND_CON_corrCity,Individual,Contact & Address,corrCity,text,M*,50
+IND_CON_corrDistrict,Individual,Contact & Address,corrDistrict,autocomplete,,
+IND_CON_corrState,Individual,Contact & Address,corrState,autocomplete,,
+IND_CON_currPincodeOthers,Individual,Contact & Address,currPincodeOthers,text,,6
+IND_CON_currDigipin,Individual,Contact & Address,currDigipin,text,,10
+IND_CON_currModeOfAadhaarVerification,Individual,Contact & Address,currModeOfAadhaarVerification,dropdown,,
+IND_CON_currModeOfAuthentication,Individual,Contact & Address,currModeOfAuthentication,dropdown,,
+IND_CON_currDlPassportExpiry,Individual,Contact & Address,currDlPassportExpiry,date,,
+IND_CON_currDeemedPoa,Individual,Contact & Address,currDeemedPoa,checkbox,,
+IND_CON_currDeemedPoaVerified,Individual,Contact & Address,currDeemedPoaVerified,checkbox,,
+IND_CON_currAddressExactMatch,Individual,Contact & Address,currAddressExactMatch,dropdown,,
+IND_CON_currEkycDataFromUidai,Individual,Contact & Address,currEkycDataFromUidai,checkbox,,
+IND_CON_currOfflineDataReceived,Individual,Contact & Address,currOfflineDataReceived,checkbox,,
+IND_CON_currCertifiedCopyVerified,Individual,Contact & Address,currCertifiedCopyVerified,checkbox,,
+IND_CON_currVerifiedFromDigilocker,Individual,Contact & Address,currVerifiedFromDigilocker,checkbox,,
+IND_CON_currEquivalentEdoc,Individual,Contact & Address,currEquivalentEdoc,checkbox,,
+IND_CON_currRemoteGeoTagging,Individual,Contact & Address,currRemoteGeoTagging,checkbox,,
+IND_CON_currPositiveVerification,Individual,Contact & Address,currPositiveVerification,checkbox,,
+IND_CON_currPhysicalVerifyThirdParty,Individual,Contact & Address,currPhysicalVerifyThirdParty,checkbox,,
+IND_CON_currPhysicalVerifyReOfficial,Individual,Contact & Address,currPhysicalVerifyReOfficial,checkbox,,
+IND_CON_currPresenceInRepository,Individual,Contact & Address,currPresenceInRepository,checkbox,,
+IND_RP_Personal_Info,Individual,Related Persons,Personal Info,tab,,
+IND_RP_relatedType,Individual,Related Persons,relatedType,dropdown,M,
+IND_RP_ckycNumber,Individual,Related Persons,ckycNumber,text,,14
+IND_RP_Edit_row,Individual,Related Persons,Edit (row),button,,
+IND_RP_Remove_row,Individual,Related Persons,Remove (row),button,,
+IND_RP_Update_in_List,Individual,Related Persons,Update in List,button,,
+IND_RP_Clear_Form,Individual,Related Persons,Clear Form,button,,
+IND_KYC_declarationDate,Individual,KYC Verification,declarationDate,date,M,10
+IND_KYC_declarationPlace,Individual,KYC Verification,declarationPlace,text,M,50
+IND_KYC_declarationFlag,Individual,KYC Verification,declarationFlag,checkbox,M,
+IND_KYC_modeOfKyc_AV,Individual,KYC Verification,modeOfKyc,radio,M,
+IND_KYC_modeOfKyc_VO,Individual,KYC Verification,modeOfKyc,radio,M,
+IND_KYC_modeOfKyc_FF,Individual,KYC Verification,modeOfKyc,radio,M,
+IND_KYC_modeOfKyc_NF,Individual,KYC Verification,modeOfKyc,radio,M,
+IND_KYC_modeOfKyc_BC,Individual,KYC Verification,modeOfKyc,radio,M,
+IND_KYC_kycDate,Individual,KYC Verification,kycDate,date,M,10
+IND_KYC_kycName,Individual,KYC Verification,kycName,text,M,150
+IND_KYC_empCode,Individual,KYC Verification,empCode,text,M,50
+IND_KYC_kycDesignation,Individual,KYC Verification,kycDesignation,text,M,
+IND_KYC_kycBranch,Individual,KYC Verification,kycBranch,text,M,
+IND_KYC_empCkycId,Individual,KYC Verification,empCkycId,text,,50
+IND_KYC_institutionName,Individual,KYC Verification,institutionName,text,M,
+IND_KYC_institutionCode,Individual,KYC Verification,institutionCode,text,M,
+IND_KYC_kycDocSubmittedType,Individual,KYC Verification,kycDocSubmittedType,dropdown,M,
+IND_KYC_kycRemarks,Individual,KYC Verification,kycRemarks,textarea,,250
+LE_ENT_applicationType,Legal Entity,Entity Details,applicationType,dropdown,M,
+LE_ENT_entityName,Legal Entity,Entity Details,entityName,text,M,150
+LE_ENT_constitutionType,Legal Entity,Entity Details,constitutionType,dropdown,M,
+LE_ENT_dateOfCommencement,Legal Entity,Entity Details,dateOfCommencement,date,,
+LE_ENT_incorporationDate,Legal Entity,Entity Details,incorporationDate,date,M,10
+LE_ENT_placeOfIncorporation,Legal Entity,Entity Details,placeOfIncorporation,text,M,50
+LE_ENT_countryOfIncorporation,Legal Entity,Entity Details,countryOfIncorporation,autocomplete,M,
+LE_ENT_pan,Legal Entity,Entity Details,pan,text,M,10
+LE_ENT_tinGst,Legal Entity,Entity Details,tinGst,text,,15
+LE_ENT_form60,Legal Entity,Entity Details,form60,checkbox,,
+LE_ENT_panVerified,Legal Entity,Entity Details,panVerified,checkbox,,
+LE_ENT_tinIssuingCountry,Legal Entity,Entity Details,tinIssuingCountry,autocomplete,,
+LE_ENT_listedCompany,Legal Entity,Entity Details,listedCompany,checkbox,,
+LE_ENT_registeredFirm,Legal Entity,Entity Details,registeredFirm,checkbox,,
+LE_ENT_registeredTrust,Legal Entity,Entity Details,registeredTrust,checkbox,,
+LE_POI_poiType,Legal Entity,Identity / POI,poiType,dropdown,M,
+LE_POI_poiNumber,Legal Entity,Identity / POI,poiNumber,text,M,50
+LE_POI_idVerifyStatus,Legal Entity,Identity / POI,idVerifyStatus,dropdown,,
+LE_CON_mobISD,Legal Entity,Contact & Address,mobISD,autocomplete,,
+LE_CON_mobNo,Legal Entity,Contact & Address,mobNo,text,,10
+LE_CON_mobISD2,Legal Entity,Contact & Address,mobISD2,autocomplete,,
+LE_CON_mobNo2,Legal Entity,Contact & Address,mobNo2,text,,10
+LE_CON_officialTelephone,Legal Entity,Contact & Address,officialTelephone,text,,12
+LE_CON_faxNumber,Legal Entity,Contact & Address,faxNumber,text,,12
+LE_CON_emailID,Legal Entity,Contact & Address,emailID,text,,
+LE_CON_emailID2,Legal Entity,Contact & Address,emailID2,text,,
+LE_CON_addressType,Legal Entity,Contact & Address,addressType,dropdown,M,
+LE_CON_proofOfAddress,Legal Entity,Contact & Address,proofOfAddress,dropdown,M,
+LE_CON_poaRefNo,Legal Entity,Contact & Address,poaRefNo,text,M,50
+LE_CON_add1,Legal Entity,Contact & Address,add1,text,M,55
+LE_CON_add2,Legal Entity,Contact & Address,add2,text,,55
+LE_CON_add3,Legal Entity,Contact & Address,add3,text,,55
+LE_CON_country,Legal Entity,Contact & Address,country,autocomplete,M,
+LE_CON_pincode,Legal Entity,Contact & Address,pincode,text,M,6
+LE_CON_city,Legal Entity,Contact & Address,city,text,M,
+LE_CON_district,Legal Entity,Contact & Address,district,autocomplete,,
+LE_CON_state,Legal Entity,Contact & Address,state,autocomplete,,
+LE_CON_regPincodeOthers,Legal Entity,Contact & Address,regPincodeOthers,text,,
+LE_CON_regDigipin,Legal Entity,Contact & Address,regDigipin,text,,
+LE_CON_Same_as_registered_address,Legal Entity,Contact & Address,Same as registered address,checkbox,,
+LE_CON_corrAddressType,Legal Entity,Contact & Address,corrAddressType,dropdown,,
+LE_CON_corrProof,Legal Entity,Contact & Address,corrProof,dropdown,,
+LE_CON_corrAdd1,Legal Entity,Contact & Address,corrAdd1,text,,
+LE_CON_corrCountry,Legal Entity,Contact & Address,corrCountry,autocomplete,,
+LE_CON_corrPincode,Legal Entity,Contact & Address,corrPincode,text,,
+LE_CON_bizPincodeOthers,Legal Entity,Contact & Address,bizPincodeOthers,text,,
+LE_CON_bizDigipin,Legal Entity,Contact & Address,bizDigipin,text,,
+LE_RP_RP_table,Legal Entity,Related Persons,RP table,table,,
+LE_RP_relatedType,Legal Entity,Related Persons,relatedType,dropdown,M,
+LE_RP_din,Legal Entity,Related Persons,din,text,,
+LE_RP_ckycNumber,Legal Entity,Related Persons,ckycNumber,text,,14
+LE_RP_numberOfBeneficialOwners,Legal Entity,Related Persons,numberOfBeneficialOwners,text,M?,3
+LE_RP_controllingInterest,Legal Entity,Related Persons,controllingInterest,dropdown,M?,
+LE_RP_percentageOfOwnership,Legal Entity,Related Persons,percentageOfOwnership,text,,10
+LE_RP_Edit_row,Legal Entity,Related Persons,Edit (row),button,,
+LE_RP_Remove_row,Legal Entity,Related Persons,Remove (row),button,,
+LE_RP_Update_in_List,Legal Entity,Related Persons,Update in List,button,,
+LE_RP_Clear_Form,Legal Entity,Related Persons,Clear Form,button,,
+LE_KYC_declarationDate,Legal Entity,KYC Verification,declarationDate,date,M,10
+LE_KYC_declarationPlace,Legal Entity,KYC Verification,declarationPlace,text,M,50
+LE_KYC_declarationFlag,Legal Entity,KYC Verification,declarationFlag,checkbox,M,
+LE_KYC_modeOfKyc_AV,Legal Entity,KYC Verification,modeOfKyc,radio,M,
+LE_KYC_modeOfKyc_VO,Legal Entity,KYC Verification,modeOfKyc,radio,M,
+LE_KYC_modeOfKyc_FF,Legal Entity,KYC Verification,modeOfKyc,radio,M,
+LE_KYC_modeOfKyc_NF,Legal Entity,KYC Verification,modeOfKyc,radio,M,
+LE_KYC_modeOfKyc_BC,Legal Entity,KYC Verification,modeOfKyc,radio,M,
+LE_KYC_kycDate,Legal Entity,KYC Verification,kycDate,date,M,10
+LE_KYC_kycName,Legal Entity,KYC Verification,kycName,text,M,150
+LE_KYC_empCode,Legal Entity,KYC Verification,empCode,text,M,10
+LE_KYC_kycDesignation,Legal Entity,KYC Verification,kycDesignation,text,M,
+LE_KYC_kycBranch,Legal Entity,KYC Verification,kycBranch,text,M,
+LE_KYC_empCkycId,Legal Entity,KYC Verification,empCkycId,text,,14
+LE_KYC_institutionName,Legal Entity,KYC Verification,institutionName,text,M,
+LE_KYC_institutionCode,Legal Entity,KYC Verification,institutionCode,text,M,
+LE_KYC_kycDocSubmittedType,Legal Entity,KYC Verification,kycDocSubmittedType,dropdown,M,
+LE_KYC_kycRemarks,Legal Entity,KYC Verification,kycRemarks,textarea,,250
+LE_KYC_certifiedCopiesReceived,Legal Entity,KYC Verification,certifiedCopiesReceived,checkbox,,
+LE_KYC_equivalentEdocumentReceived,Legal Entity,KYC Verification,equivalentEdocumentReceived,checkbox,,
+LE_KYC_digilockerVerificationReceived,Legal Entity,KYC Verification,digilockerVerificationReceived,checkbox,,
+COM_IMG_Thumbnail,Common,Image panel,Thumbnail,img,,
+COM_IMG_Revert_to_Image,Common,Image panel,Revert to Image,button,,

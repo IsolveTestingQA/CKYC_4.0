@@ -72,3 +72,10 @@ extentReportPath=Report Output/Extent
 currentDataPath=Current Data
 # Timestamped TXT/HTML logs with red FAILED lines
 executionLogPath=Report Output/Execution Logs
+
+# --- DVS 2.0 automation (all optional; CONFIG sheet of DVS_Automation_TestData.xlsx supplies defaults) ---
+# dvs.url=https://iflowckyc.isolveapps.in/dvs-2
+# dvs.loginWaitSeconds=240
+# dvs.dateFormat=dd-MM-yyyy
+# dvs.queue.rowXpath=(//*[normalize-space(text())='{ID}'])[1]
+# Run filters can also be passed as -Ddvs.module=IND -Ddvs.priority=P0 -Ddvs.group=IND-D-* -Ddvs.tc=DVS-NEG-IND-0019
