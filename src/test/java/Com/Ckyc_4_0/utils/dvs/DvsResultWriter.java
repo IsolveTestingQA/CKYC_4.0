@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/** Every run writes its own new workbook (never overwrites): Summary, Results, Failed, Unmapped. */
+/** Every run writes its own new workbook (never overwrites): Summary, Results, Failed, Unmapped, Step_Log, Bugs. */
 public final class DvsResultWriter {
 
 	private static final String[] STATUSES = { DvsRow.PASS, DvsRow.FAIL, DvsRow.BLOCKED, DvsRow.CAPTURED, DvsRow.PLANNED, DvsRow.NOT_RUN };
@@ -39,7 +39,7 @@ public final class DvsResultWriter {
 		LocalDateTime now = LocalDateTime.now();
 		String day = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 		String ts = now.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-		Path file = Paths.get(resultsRoot(), day, "DVS_" + ts + "_" + mode + ".xlsx");
+		Path file = Paths.get(resultsRoot(), day, DvsStepLog.runId() + ".xlsx");
 		try (XSSFWorkbook wb = new XSSFWorkbook()) {
 			CellStyle bold = wb.createCellStyle();
 			Font f = wb.createFont();
@@ -50,6 +50,8 @@ public final class DvsResultWriter {
 			results(wb, bold, "Results", rows, false);
 			results(wb, bold, "Failed", rows, true);
 			unmapped(wb, bold, rows);
+			stepLog(wb, bold);
+			bugs(wb, bold);
 
 			Files.createDirectories(file.getParent());
 			try (OutputStream out = Files.newOutputStream(file)) {
@@ -147,7 +149,7 @@ public final class DvsResultWriter {
 	private static void results(XSSFWorkbook wb, CellStyle bold, String name, List<DvsRow> rows, boolean failedOnly) {
 		Sheet s = wb.createSheet(name);
 		String[] cols = { "TC_ID", "Sheet", "Module", "Customer_ID", "Priority", "Scenario", "Field", "Input_Value",
-				"Expected_Result", "Status", "Actual_Result", "Locator_ID", "Screenshot_Path", "Group_ID" };
+				"Expected_Result", "Status", "Actual_Result", "Locator_ID", "Screenshot_Path", "Group_ID", "Step_Log_Rows" };
 		Row h = s.createRow(0);
 		for (int i = 0; i < cols.length; i++) {
 			h.createCell(i).setCellValue(cols[i]);
@@ -161,7 +163,7 @@ public final class DvsResultWriter {
 			Row x = s.createRow(r++);
 			String[] v = { row.tcId(), row.sheet(), row.module(), row.customerId(), row.priority(), row.get("Scenario"),
 					row.field(), row.inputValue(), row.expectedResult(), row.status(), row.actual(), row.locatorId(),
-					row.screenshot(), row.groupId() };
+					row.screenshot(), row.groupId(), row.stepRange() };
 			for (int i = 0; i < v.length; i++) {
 				x.createCell(i).setCellValue(cap(v[i]));
 			}
@@ -197,6 +199,54 @@ public final class DvsResultWriter {
 		s.setColumnWidth(3, 9000);
 		s.setColumnWidth(4, 16000);
 		s.createFreezePane(0, 1);
+	}
+
+	private static void stepLog(XSSFWorkbook wb, CellStyle bold) {
+		Sheet s = wb.createSheet("Step_Log");
+		Row h = s.createRow(0);
+		for (int i = 0; i < DvsStepLog.COLUMNS.length; i++) {
+			h.createCell(i).setCellValue(DvsStepLog.COLUMNS[i]);
+			h.getCell(i).setCellStyle(bold);
+		}
+		int r = 1;
+		for (String[] row : DvsStepLog.rows()) {
+			if (r > 1_000_000) {
+				break;
+			}
+			Row x = s.createRow(r++);
+			for (int i = 0; i < row.length; i++) {
+				x.createCell(i).setCellValue(cap(row[i]));
+			}
+		}
+		s.createFreezePane(0, 1);
+		for (int i = 0; i < DvsStepLog.COLUMNS.length; i++) {
+			s.setColumnWidth(i, i == 14 || i == 16 || i == 17 || i == 18 ? 12000 : 4800);
+		}
+	}
+
+	private static void bugs(XSSFWorkbook wb, CellStyle bold) {
+		Sheet s = wb.createSheet("Bugs");
+		String[] cols = { "Kind", "TC_ID", "Customer_ID", "Tab", "Field", "Detail", "Screenshot_Path" };
+		Row h = s.createRow(0);
+		for (int i = 0; i < cols.length; i++) {
+			h.createCell(i).setCellValue(cols[i]);
+			h.getCell(i).setCellStyle(bold);
+		}
+		int r = 1;
+		for (DvsFindings.Finding f : DvsFindings.all()) {
+			Row x = s.createRow(r++);
+			String[] v = { f.kind(), f.tcId(), f.customerId(), f.tab(), f.field(), f.detail(), f.screenshot() };
+			for (int i = 0; i < v.length; i++) {
+				x.createCell(i).setCellValue(cap(v[i]));
+			}
+		}
+		s.createFreezePane(0, 1);
+		s.setColumnWidth(5, 20000);
+		for (int i = 0; i < cols.length; i++) {
+			if (i != 5) {
+				s.setColumnWidth(i, 5500);
+			}
+		}
 	}
 
 	private static String cap(String v) {

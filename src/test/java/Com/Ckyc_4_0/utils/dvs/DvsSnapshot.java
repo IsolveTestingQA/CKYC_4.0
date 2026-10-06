@@ -19,6 +19,12 @@ import java.util.Map;
 public final class DvsSnapshot {
 
 	private final Map<String, String> values = new LinkedHashMap<>();
+	/** Full Maker snapshot (C1): key tab|Locator_ID, RP|row-n, IMG|n - used for the Maker to Checker compare. */
+	private final Map<String, String> full = new LinkedHashMap<>();
+
+	public Map<String, String> full() {
+		return full;
+	}
 
 	public Map<String, String> values() {
 		return values;

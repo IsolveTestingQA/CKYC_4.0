@@ -55,7 +55,7 @@ public class DvsSteps {
 			}
 			String summary = "Result file " + outcome.resultFile() + " | total=" + outcome.total() + " pass=" + outcome.pass()
 					+ " fail=" + outcome.fail() + " blocked=" + outcome.blocked() + " captured=" + outcome.captured()
-					+ " notRun=" + outcome.notRun();
+					+ " notRun=" + outcome.notRun() + " bugsFound=" + outcome.bugs();
 			if (outcome.fail() > 0 || outcome.blocked() > 0) {
 				throw new AssertionError(summary);
 			}

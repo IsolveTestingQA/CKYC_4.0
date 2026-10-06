@@ -79,3 +79,10 @@ executionLogPath=Report Output/Execution Logs
 # dvs.dateFormat=dd-MM-yyyy
 # dvs.queue.rowXpath=(//*[normalize-space(text())='{ID}'])[1]
 # Run filters can also be passed as -Ddvs.module=IND -Ddvs.priority=P0 -Ddvs.group=IND-D-* -Ddvs.tc=DVS-NEG-IND-0019
+
+
+# --- DVS 2.0 queue search: customer IDs to open (comma separated; first one found in the Maker queue is used) ---
+# These are fixed test records for now; to be made dynamic later.
+dvs.cust.individual=IN03100002
+dvs.cust.minor=MN02100119,KDEV200028
+dvs.cust.le=LE02100010,LE02100008

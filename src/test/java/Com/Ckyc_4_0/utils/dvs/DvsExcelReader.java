@@ -86,6 +86,35 @@ public final class DvsExcelReader {
 		return rows;
 	}
 
+	/** Plain table read (first row = header, no TC_ID needed), e.g. the DOC_MASTER sheet. */
+	public static List<Map<String, String>> readTable(Path file, String sheetName) {
+		List<Map<String, String>> rows = new ArrayList<>();
+		try (InputStream in = Files.newInputStream(file); Workbook wb = WorkbookFactory.create(in)) {
+			Sheet sheet = wb.getSheet(sheetName);
+			Row header = sheet == null ? null : sheet.getRow(0);
+			if (header == null) {
+				return rows;
+			}
+			for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+				Row r = sheet.getRow(i);
+				if (r == null) {
+					continue;
+				}
+				Map<String, String> m = new LinkedHashMap<>();
+				for (int c = 0; c < header.getLastCellNum(); c++) {
+					String name = text(header.getCell(c));
+					if (!name.isEmpty()) {
+						m.put(name, text(r.getCell(c)));
+					}
+				}
+				rows.add(m);
+			}
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot read DVS test data: " + file, e);
+		}
+		return rows;
+	}
+
 	private static String text(Cell cell) {
 		return cell == null ? "" : FORMAT.formatCellValue(cell).trim();
 	}

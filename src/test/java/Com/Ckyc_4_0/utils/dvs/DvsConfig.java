@@ -56,6 +56,17 @@ public final class DvsConfig {
 		return v.equalsIgnoreCase("true") || v.equalsIgnoreCase("on") || v.equalsIgnoreCase("yes");
 	}
 
+	/** Comma separated value as a list (blank items dropped). */
+	public static java.util.List<String> list(String key) {
+		java.util.List<String> out = new java.util.ArrayList<>();
+		for (String part : get(key, "").split(",")) {
+			if (!part.isBlank()) {
+				out.add(part.trim());
+			}
+		}
+		return out;
+	}
+
 	public static Path testDataPath() {
 		return Paths.get(get(TEST_DATA_PATH_KEY, DEFAULT_TEST_DATA));
 	}

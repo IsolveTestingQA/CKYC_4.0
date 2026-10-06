@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  */
 public final class DvsLocators {
 
-	public record Meta(String id, String module, String tab, String key, String kind) {
+	public record Meta(String id, String module, String tab, String key, String kind, String mandatory, String maxLen) {
 	}
 
 	public record Resolution(String id, String reason) {
@@ -165,6 +165,18 @@ public final class DvsLocators {
 		for (String k : p.stringPropertyNames()) {
 			xpaths.put(k, p.getProperty(k).trim());
 		}
+		try (InputStream extra = DvsLocators.class.getResourceAsStream("/DVS/dvs_locators_extra.properties")) {
+			if (extra != null) {
+				Properties e = new Properties();
+				e.load(new InputStreamReader(extra, StandardCharsets.UTF_8));
+				for (String k : e.stringPropertyNames()) {
+					xpaths.put(k, e.getProperty(k).trim());
+					meta.put(k, new Meta(k, "Common", "Shell", k, "ui", "", ""));
+				}
+			}
+		} catch (IOException ex) {
+			throw new IllegalStateException("Cannot load DVS/dvs_locators_extra.properties", ex);
+		}
 	}
 
 	private void loadKinds() {
@@ -174,7 +186,8 @@ public final class DvsLocators {
 			while ((line = br.readLine()) != null) {
 				List<String> c = splitCsv(line);
 				if (c.size() >= 5) {
-					meta.put(c.get(0), new Meta(c.get(0), c.get(1), c.get(2), c.get(3), c.get(4)));
+					meta.put(c.get(0), new Meta(c.get(0), c.get(1), c.get(2), c.get(3), c.get(4),
+							c.size() > 5 ? c.get(5) : "", c.size() > 6 ? c.get(6) : ""));
 				}
 			}
 		} catch (IOException e) {

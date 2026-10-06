@@ -25,6 +25,7 @@ public final class DvsRow {
 	private String actual = "";
 	private String screenshot = "";
 	private String locatorId = "";
+	private String stepRange = "";
 
 	public DvsRow(String sheet, Map<String, String> values) {
 		this.sheet = sheet;
@@ -132,6 +133,14 @@ public final class DvsRow {
 
 	public void screenshot(String path) {
 		this.screenshot = path == null ? "" : path;
+	}
+
+	public String stepRange() {
+		return stepRange;
+	}
+
+	public void stepRange(String range) {
+		this.stepRange = range == null ? "" : range;
 	}
 
 	public void locatorId(String id) {

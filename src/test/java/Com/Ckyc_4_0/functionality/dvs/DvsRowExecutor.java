@@ -6,9 +6,12 @@
 package Com.Ckyc_4_0.functionality.dvs;
 
 import Com.Ckyc_4_0.utils.dvs.DvsConfig;
+import Com.Ckyc_4_0.utils.dvs.DvsFindings;
 import Com.Ckyc_4_0.utils.dvs.DvsLocators;
 import Com.Ckyc_4_0.utils.dvs.DvsRow;
 import Com.Ckyc_4_0.utils.dvs.DvsScreenshot;
+import Com.Ckyc_4_0.utils.dvs.DvsSnapshot;
+import Com.Ckyc_4_0.utils.dvs.DvsStepLog;
 
 import org.openqa.selenium.NoSuchSessionException;
 import org.openqa.selenium.NoSuchWindowException;
@@ -26,8 +29,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Executes ONE data row. A row is run only when its Field resolves to a locator and its Input_Value is a
- * typed value. Anything else is reported NOT RUN with the reason - never guessed.
+ * Executes ONE data row. A row is run only when its Field resolves to a locator and its Input_Value is a typed
+ * value. Anything else is reported NOT RUN with the reason - never guessed.
+ * Extra checks per row: T1/T2 tab-switch persistence, Submit rows with R2 Checker recovery, E1-E3, S1, step log.
  */
 public final class DvsRowExecutor {
 
@@ -52,15 +56,33 @@ public final class DvsRowExecutor {
 			"related person", "Related Persons");
 
 	private final boolean dryRun;
+	private final Set<String> bugLocked;
 	private String customerId = "";
 	private final Set<String> touched = new LinkedHashSet<>();
+	private boolean customerBlocked;
+	private String blockedReason = "";
+	private DvsSnapshot lastPositive = new DvsSnapshot();
 
-	public DvsRowExecutor(boolean dryRun) {
+	public DvsRowExecutor(boolean dryRun, Set<String> bugLocked) {
 		this.dryRun = dryRun;
+		this.bugLocked = bugLocked;
 	}
 
 	public void customer(String id) {
 		this.customerId = id;
+	}
+
+	public void lastPositive(DvsSnapshot snapshot) {
+		this.lastPositive = snapshot;
+	}
+
+	/** True after an R3 situation: the customer did not come back to the Maker queue. */
+	public boolean customerBlocked() {
+		return customerBlocked;
+	}
+
+	public String blockedReason() {
+		return blockedReason;
 	}
 
 	/** Locator ids touched since the last call (field + connected field), then cleared. */
@@ -71,6 +93,7 @@ public final class DvsRowExecutor {
 	}
 
 	public void execute(DvsRow row) {
+		DvsStepLog.tc(row.tcId());
 		String field = row.field();
 		if (field.toLowerCase(Locale.ROOT).endsWith(" tab")) {
 			executeTabRoundTrip(row, field.substring(0, field.length() - 4).trim());
@@ -92,7 +115,7 @@ public final class DvsRowExecutor {
 		String value = openList ? raw : token(raw);
 		if (dryRun) {
 			row.result(DvsRow.PLANNED, (openList ? "would list options of " : "would set ") + res.id()
-					+ (openList ? "" : " = '" + value + "'"));
+					+ (openList ? "" : " = '" + value + "'") + flags(row));
 			return;
 		}
 		try {
@@ -112,36 +135,56 @@ public final class DvsRowExecutor {
 		} catch (RuntimeException e) {
 			fail(row, "Exception: " + firstLine(e));
 		}
+		verdictStep(row);
+	}
+
+	/** What a dry run reports about the extra checks this row would get. */
+	private String flags(DvsRow row) {
+		StringBuilder sb = new StringBuilder();
+		if (needsSubmit(row)) {
+			sb.append(" [Submit to Checker + R2 recovery]");
+		}
+		if (DvsConfig.getBool("tabswitch.check", true)) {
+			sb.append(" [tab-switch persistence T1/T2]");
+		}
+		return sb.toString();
 	}
 
 	private void runLiteral(DvsRow row, String id, String value) {
 		touched.add(id);
+		String kind = L.kind(id);
 		String connId = "";
 		DvsLocators.Resolution conn = L.resolveField(row.moduleCode(), row.connectedField());
+		String lockNote = "";
 		if (conn.ok() && !row.connectedValue().isEmpty() && !descriptive(row.connectedValue())) {
 			connId = conn.id();
 			touched.add(connId);
-			DvsFieldActions.set(connId, token(row.connectedValue()));
-			DvsFieldActions.blur(connId);
+			if (bugLocked.contains(connId)) {
+				lockNote = " | connected field " + connId + " has known bug value";
+			} else {
+				DvsFieldActions.set(connId, token(row.connectedValue()));
+				DvsFieldActions.blur(connId);
+			}
 		}
+		String baseline = DvsFieldActions.read(id);
 		DvsFieldActions.set(id, value);
 		DvsFieldActions.blur(id);
 		String error = DvsFieldActions.errorText(id);
 		String back = DvsFieldActions.read(id);
-		String actual = (error.isEmpty() ? "No validation message" : "Message: " + error) + " | value now '" + back + "'";
+		String actual = (error.isEmpty() ? "No validation message" : "Message: " + error) + " | value now '" + back + "'" + lockNote;
 		String expected = row.expectedResult();
+		boolean expectReject = NEGATIVE.matcher(expected).find();
 
-		if (NEGATIVE.matcher(expected).find()) {
+		if (expectReject) {
 			if (error.isEmpty()) {
-				fail(row, "Expected rejection but " + actual);
+				acceptedBug(row, id, value, actual, expected);
 			} else {
 				row.result(DvsRow.PASS, actual);
 			}
 		} else if (POSITIVE.matcher(expected).find()) {
 			if (!error.isEmpty()) {
 				fail(row, "Expected acceptance but " + actual);
-			} else if (!value.isEmpty() && !"dropdown".equals(L.kind(id)) && !value.equals(back)
-					&& !"checkbox".equals(L.kind(id))) {
+			} else if (!value.isEmpty() && !"dropdown".equals(kind) && !"checkbox".equals(kind) && !value.equals(back)) {
 				fail(row, "Value changed after entry (typed '" + value + "', now '" + back + "')");
 			} else {
 				row.result(DvsRow.PASS, actual);
@@ -152,6 +195,134 @@ public final class DvsRowExecutor {
 		if (DvsRow.FAIL.equals(row.status()) || DvsRow.CAPTURED.equals(row.status())) {
 			row.screenshot(DvsScreenshot.capture(row.tcId(), row.status()));
 		}
+
+		if (needsSubmit(row) && !customerBlocked) {
+			submitFlow(row, id, value, error.isEmpty());
+		}
+		if (!error.isEmpty() || value.isEmpty() || !DvsConfig.getBool("tabswitch.check", true) || customerBlocked) {
+			return;
+		}
+		persistenceCheck(row, id, value, baseline, expectReject);
+	}
+
+	/** R1: invalid value accepted with no error - log a BUG, do not Submit for that row (unless the row tests Submit). */
+	private void acceptedBug(DvsRow row, String id, String value, String actual, String expected) {
+		String detail = "Invalid value accepted: " + id + " = '" + value + "' (expected: " + expected + ")";
+		fail(row, "BUG - " + detail + " | " + actual);
+		DvsFindings.add(DvsFindings.BUG, row.tcId(), customerId, "", id, detail, row.screenshot());
+	}
+
+	/** Rows that test Submit: Expected_Result talks about Submit being blocked. */
+	static boolean needsSubmit(DvsRow row) {
+		String e = row.expectedResult().toLowerCase(Locale.ROOT);
+		return e.contains("submit") && (e.contains("block") || e.contains("reject") || e.contains("not allowed"));
+	}
+
+	/** T3 + C1, Submit to Checker, E1-E3, S1; on an accepted invalid value R2 Checker revert recovery. */
+	private void submitFlow(DvsRow row, String id, String value, boolean noInlineError) {
+		String prefix = "LE".equals(row.moduleCode()) ? "LE" : "IND";
+		DvsFieldActions.dismissDialogIfOpen();
+		DvsItemErrors.Panel before = DvsItemErrors.read();
+		DvsFieldActions.recordTabNames().forEach(DvsFieldActions::openTab);
+		Map<String, String> makerFull = DvsRestoreManager.captureFull(prefix);
+
+		String toast = DvsNavigation.submit();
+		String dialog = DvsFieldActions.dialogText();
+		boolean submitted = DvsCheckerFlow.submitSucceeded(toast);
+		DvsItemErrors.Panel after = DvsItemErrors.read();
+
+		if (!submitted) {
+			DvsItemErrors.checkDialogCounts(row.tcId(), customerId);
+			DvsItemErrors.mapAndVerify(after, row.tcId(), customerId);
+			DvsFieldActions.dismissDialogIfOpen();
+			String note = "Submit blocked as expected. Toast: " + toast + (dialog.isEmpty() ? "" : " | Dialog: " + oneLine(dialog));
+			if (!DvsRow.FAIL.equals(row.status())) {
+				row.result(DvsRow.PASS, row.actual() + " | " + note);
+			} else {
+				row.result(DvsRow.FAIL, row.actual() + " | " + note);
+			}
+			return;
+		}
+
+		String detail = "Invalid value submitted to checker: " + id + " = '" + value + "'";
+		row.result(DvsRow.FAIL, "BUG - " + detail + " | Toast: " + toast);
+		row.screenshot(DvsScreenshot.capture(row.tcId(), "submitted"));
+		if (!before.iflow().isEmpty()) {
+			DvsFindings.add(DvsFindings.BUG, row.tcId(), customerId, "", "Item Error List",
+					"Record submitted while " + before.iflow().size() + " iFlow revert errors were still listed: " + before.iflow(),
+					row.screenshot());
+		}
+		if (!DvsCheckerFlow.enabled()) {
+			row.result(DvsRow.FAIL, row.actual() + " | checker.recovery=OFF: record left in Checker queue");
+			customerBlocked = true;
+			blockedReason = "Record " + customerId + " was submitted to Checker and not reverted (checker.recovery=OFF)";
+			return;
+		}
+		DvsCheckerFlow.Outcome out = DvsCheckerFlow.recover(row.tcId(), row.moduleCode(), customerId,
+				id + "=" + value, makerFull, lastPositive);
+		row.result(DvsRow.FAIL, row.actual() + " | recovery: reverted=" + out.reverted() + ", backInMaker=" + out.backInMaker()
+				+ (out.notes().isEmpty() ? "" : " | " + oneLine(String.join("; ", out.notes()))));
+		if (!out.backInMaker()) {
+			customerBlocked = true;
+			blockedReason = "R3: " + customerId + " did not return to the Maker queue after revert";
+			return;
+		}
+		if (DvsConfig.getBool("keep.bug.value", true)) {
+			bugLocked.add(id);
+			DvsStepLog.step("bug-locked").field(id).actual("kept bug value '" + value + "' (keep.bug.value=true)").result(DvsStepLog.INFO).log();
+		} else {
+			touched.add(id);
+		}
+	}
+
+	/** T1 / T2: switch tab and come back, then reload and read again. */
+	private void persistenceCheck(DvsRow row, String id, String value, String baseline, boolean invalidValue) {
+		String kind = L.kind(id);
+		DvsLocators.Meta meta = L.meta(id);
+		String ownTab = meta == null ? "" : meta.tab();
+		try {
+			String other = "";
+			for (String t : DvsFieldActions.recordTabNames()) {
+				if (!t.equalsIgnoreCase(ownTab)) {
+					other = t;
+					break;
+				}
+			}
+			if (!other.isEmpty()) {
+				DvsFieldActions.openTab(other);
+				DvsFieldActions.openTab(ownTab);
+			}
+			String afterSwitch = DvsFieldActions.read(id);
+			DvsNavigation.reloadAndReopen(row.moduleCode(), customerId);
+			DvsFieldActions.openTab(ownTab);
+			String afterReload = DvsFieldActions.read(id);
+			boolean sameSwitch = DvsFieldActions.sameValue(kind, value, afterSwitch);
+			boolean sameReload = DvsFieldActions.sameValue(kind, value, afterReload);
+			DvsStepLog.step("persistence-check").field(id).before(baseline).entered(value).after(afterReload)
+					.actual("after tab switch '" + afterSwitch + "', after reload '" + afterReload + "'")
+					.result(sameSwitch && sameReload ? DvsStepLog.PASS : DvsStepLog.FAIL).log();
+
+			if (invalidValue && sameReload) {
+				persistenceBug(row, id, "Invalid data autosaved: '" + value + "' is still there after reload");
+			} else if (!invalidValue && (!sameSwitch || !sameReload)) {
+				String shown = !sameSwitch ? afterSwitch : afterReload;
+				boolean notUpdated = DvsFieldActions.sameValue(kind, baseline, shown);
+				persistenceBug(row, id, (notUpdated ? "Not updated: old value '" + baseline + "' shown" : "Altered: typed '" + value
+						+ "' but shows '" + shown + "'") + (sameSwitch ? " after reload" : " after tab switch"));
+			}
+		} catch (WebDriverException e) {
+			if (sessionGone(e)) {
+				throw new RunAbort("Browser session lost: " + firstLine(e), e);
+			}
+			DvsStepLog.step("persistence-check").field(id).actual("Exception: " + firstLine(e)).result(DvsStepLog.FAIL).log();
+		}
+	}
+
+	private void persistenceBug(DvsRow row, String id, String text) {
+		row.screenshot(DvsScreenshot.capture(row.tcId(), "persistence"));
+		DvsFindings.add(DvsFindings.BUG, row.tcId(), customerId, "", id, text, row.screenshot());
+		row.result(DvsRow.FAIL, row.actual() + " | " + text);
+		touched.add(id);
 	}
 
 	/** Positive "X tab" rows: record the tab values, Save, reload, reopen, compare. */
@@ -186,7 +357,7 @@ public final class DvsRowExecutor {
 			StringBuilder diff = new StringBuilder();
 			for (Map.Entry<String, String> e : before.entrySet()) {
 				String now = DvsFieldActions.present(e.getKey()) ? DvsFieldActions.read(e.getKey()) : "<missing>";
-				if (!e.getValue().equals(now)) {
+				if (!DvsFieldActions.sameValue(L.kind(e.getKey()), e.getValue(), now)) {
 					diff.append(e.getKey()).append(": '").append(e.getValue()).append("' -> '").append(now).append("'; ");
 				}
 			}
@@ -201,6 +372,14 @@ public final class DvsRowExecutor {
 			}
 			fail(row, "Exception: " + firstLine(e));
 		}
+		verdictStep(row);
+	}
+
+	private void verdictStep(DvsRow row) {
+		String result = DvsRow.PASS.equals(row.status()) ? DvsStepLog.PASS
+				: DvsRow.FAIL.equals(row.status()) ? DvsStepLog.FAIL : DvsStepLog.INFO;
+		DvsStepLog.step("row-verdict").field(row.locatorId()).entered(row.inputValue()).expected(row.expectedResult())
+				.actual(row.status() + ": " + row.actual()).shot(row.screenshot()).result(result).log();
 	}
 
 	private void fail(DvsRow row, String message) {
@@ -255,5 +434,9 @@ public final class DvsRowExecutor {
 		}
 		int nl = m.indexOf('\n');
 		return nl > 0 ? m.substring(0, nl) : m;
+	}
+
+	private static String oneLine(String s) {
+		return s.replace('\r', ' ').replace('\n', ' ');
 	}
 }
