@@ -21,8 +21,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Dashboard UI data Excel — one row per title (summary card or sub-item) per filter combination.
@@ -98,6 +101,141 @@ public final class DashboardDataExcelReport {
 			excelRow.createCell(9).setCellValue(row.count());
 			excelRow.createCell(10).setCellValue(nullToEmpty(row.formula()));
 			excelRow.createCell(11).setCellValue(nullToEmpty(row.capturedAt()));
+		}
+	}
+
+	// ---------------------------------------------------------------- popup report tables (dynamic headers)
+
+	private static final int REPORT_FIXED_COLS = 6;
+	private static final String[] REPORT_FIXED = { "Run Timestamp", "Date Filter", "Constitution", "Application", "Code", "Sub-card" };
+
+	private static final class ReportSheet {
+		final Sheet sheet;
+		final List<String> headers = new ArrayList<>();
+		int nextRow = 1;
+
+		ReportSheet(Sheet sheet) {
+			this.sheet = sheet;
+		}
+	}
+
+	private final Map<String, ReportSheet> reportSheets = new LinkedHashMap<>();
+	private Sheet valuesSheet;
+	private int valuesRow = 1;
+
+	/**
+	 * Stores one popup report completely: its own sheet per sub-card (every filter combination appended, headers as
+	 * shown - a new column simply becomes a new column here) and one "Report_Values" sheet holding every value as
+	 * Filter / Code / Sub-card / Row / Header / Value.
+	 */
+	public synchronized void addReportTable(String dateFilter, String constitution, String application, String code,
+			String subCard, List<String> headers, List<List<String>> rows, String note) {
+		if (workbook == null || sheet == null) {
+			initWorkbook();
+		}
+		if (workbook == null) {
+			return;
+		}
+		String runTs = ReportNamingHelper.runTimestamp();
+		String name = ("R_" + code + "_" + subCard).replaceAll("[\\\\/?*\\[\\]:]", "_");
+		if (name.length() > 31) {
+			name = name.substring(0, 31);
+		}
+		ReportSheet rs = reportSheets.get(name);
+		if (rs == null) {
+			rs = new ReportSheet(workbook.createSheet(name));
+			Row h = rs.sheet.createRow(0);
+			for (int i = 0; i < REPORT_FIXED.length; i++) {
+				Cell c = h.createCell(i);
+				c.setCellValue(REPORT_FIXED[i]);
+				c.setCellStyle(headerStyle);
+				rs.sheet.setColumnWidth(i, 20 * 256);
+			}
+			reportSheets.put(name, rs);
+		}
+		int[] col = new int[headers.size()];
+		for (int c = 0; c < headers.size(); c++) {
+			int idx = rs.headers.indexOf(headers.get(c));
+			if (idx < 0) {
+				rs.headers.add(headers.get(c));
+				idx = rs.headers.size() - 1;
+				Cell hc = rs.sheet.getRow(0).createCell(REPORT_FIXED_COLS + idx);
+				hc.setCellValue(headers.get(c));
+				hc.setCellStyle(headerStyle);
+				rs.sheet.setColumnWidth(REPORT_FIXED_COLS + idx, 24 * 256);
+			}
+			col[c] = REPORT_FIXED_COLS + idx;
+		}
+		if (valuesSheet == null) {
+			valuesSheet = workbook.createSheet("Report_Values");
+			String[] vh = { "Run Timestamp", "Date Filter", "Constitution", "Application", "Code", "Sub-card", "Customer ID", "Row No",
+					"Header", "Value" };
+			Row r = valuesSheet.createRow(0);
+			for (int i = 0; i < vh.length; i++) {
+				Cell c = r.createCell(i);
+				c.setCellValue(vh[i]);
+				c.setCellStyle(headerStyle);
+				valuesSheet.setColumnWidth(i, 22 * 256);
+			}
+		}
+		if (rows.isEmpty()) {
+			Row r = rs.sheet.createRow(rs.nextRow++);
+			fixed(r, runTs, dateFilter, constitution, application, code, subCard);
+			r.createCell(REPORT_FIXED_COLS).setCellValue(note == null || note.isBlank() ? "0 records" : note);
+			return;
+		}
+		int keyIdx = Com.Ckyc_4_0.utils.reports.ReportTable.keyIndex(headers);
+		int rowNo = 1;
+		for (List<String> values : rows) {
+			Row r = rs.sheet.createRow(rs.nextRow++);
+			fixed(r, runTs, dateFilter, constitution, application, code, subCard);
+			String customer = keyIdx >= 0 && keyIdx < values.size() ? values.get(keyIdx) : "";
+			for (int c = 0; c < headers.size(); c++) {
+				String v = c < values.size() ? values.get(c) : "";
+				setText(r.createCell(col[c]), v, code + " " + subCard + " row " + rowNo + " / " + headers.get(c));
+				if (valuesRow < 1_000_000) {
+					Row vr = valuesSheet.createRow(valuesRow++);
+					fixed(vr, runTs, dateFilter, constitution, application, code, subCard);
+					vr.createCell(6).setCellValue(customer);
+					vr.createCell(7).setCellValue(rowNo);
+					vr.createCell(8).setCellValue(headers.get(c));
+					setText(vr.createCell(9), v, code + " " + subCard + " row " + rowNo + " / " + headers.get(c));
+				}
+			}
+			rowNo++;
+		}
+	}
+
+	private int jsonCount;
+
+	/** Text into a cell; over 32,000 characters it is saved as JSON next to the workbook and the cell links to it. */
+	private void setText(Cell cell, String value, String context) {
+		String v = value == null ? "" : value;
+		if (v.length() <= 32_000) {
+			cell.setCellValue(v);
+			return;
+		}
+		try {
+			File dir = new File(new File(excelPath).getAbsoluteFile().getParentFile(), "json");
+			dir.mkdirs();
+			String name = "dashboard_cell_" + (++jsonCount) + ".json";
+			java.nio.file.Files.writeString(new File(dir, name).toPath(),
+					Com.Ckyc_4_0.utils.reports.JsonText.largeValue(context, v), java.nio.charset.StandardCharsets.UTF_8);
+			cell.setCellValue("Too large for a cell (" + v.length() + " chars) - click to view JSON");
+			org.apache.poi.ss.usermodel.Hyperlink h = workbook.getCreationHelper()
+					.createHyperlink(org.apache.poi.common.usermodel.HyperlinkType.FILE);
+			h.setAddress("json/" + name);
+			cell.setHyperlink(h);
+		} catch (IOException e) {
+			cell.setCellValue(v.substring(0, 32_000));
+			logger.warn("Large cell could not be written as JSON: {}", e.getMessage());
+		}
+	}
+
+	private static void fixed(Row r, String ts, String date, String con, String app, String code, String sub) {
+		String[] v = { ts, date, con, app, code, sub };
+		for (int i = 0; i < v.length; i++) {
+			r.createCell(i).setCellValue(v[i] == null ? "" : v[i]);
 		}
 	}
 

@@ -6,6 +6,7 @@
 package Com.Ckyc_4_0.stepdefinitions.searchdownload;
 
 import Com.Ckyc_4_0.functionality.searchdownload.SearchFunctionality;
+import Com.Ckyc_4_0.functionality.searchdownload.SearchInteractiveFunctionality;
 import Com.Ckyc_4_0.stepdefinitions.common.Hooks;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
@@ -14,6 +15,8 @@ import io.cucumber.java.en.When;
 public class SearchStepDefinitions {
 
 	private final SearchFunctionality search = new SearchFunctionality();
+	private final SearchInteractiveFunctionality interactive = new SearchInteractiveFunctionality();
+	private SearchInteractiveFunctionality.Summary interactiveSummary;
 
 	@When("user opens Search from Search And Download menu")
 	public void userOpensSearchFromSearchAndDownloadMenu() {
@@ -62,5 +65,28 @@ public class SearchStepDefinitions {
 	public void userClearsSearchAndVerifiesResetState() {
 		Hooks.runStep("Clear Search", "Search controls and previous result reset",
 				search::clearAndVerifyReset, false);
+	}
+
+	@And("user runs the interactive Search session")
+	public void userRunsTheInteractiveSearchSession() {
+		Hooks.runStep("Interactive Search session",
+				"Operator chooses the Document Type and number in the popups; every search is recorded; Close ends the session",
+				() -> interactiveSummary = interactive.runSession());
+	}
+
+	@Then("the Search results report is published")
+	public void theSearchResultsReportIsPublished() {
+		Hooks.runStep("Search results report", "Excel report written; no search with a FAIL verdict", () -> {
+			if (interactiveSummary == null) {
+				throw new AssertionError("The interactive Search session did not run");
+			}
+			String text = "Report " + interactiveSummary.file() + " | searches=" + interactiveSummary.searches()
+					+ " PASS=" + interactiveSummary.pass() + " FAIL=" + interactiveSummary.fail()
+					+ " closedByOperator=" + interactiveSummary.closedByOperator();
+			Hooks.logStep("Search results report", "No FAIL verdicts", text, interactiveSummary.fail() == 0);
+			if (interactiveSummary.fail() > 0) {
+				throw new AssertionError(text);
+			}
+		});
 	}
 }

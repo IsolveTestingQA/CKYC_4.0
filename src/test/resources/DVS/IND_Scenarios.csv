@@ -1,0 +1,89 @@
+TC_ID,Group_ID,Priority,Type,Tab,Locator_ID,Input_Value,Expect,Error_Contains,Setup,Scenario,Source_TC
+DVS-IND-PD-001,IND-PD-firstName,P0,NEGATIVE,Personal Details,IND_PER_firstName,,ERROR,required,,Mandatory First Name blank,live 2026-10-08
+DVS-IND-PD-002,IND-PD-firstName,P1,NEGATIVE,Personal Details,IND_PER_firstName,<script>alert(1)</script>,ERROR,,,Script injection in First Name,NEGATIVE: First Name script
+DVS-IND-PD-003,IND-PD-firstName,P1,POSITIVE,Personal Details,IND_PER_firstName,D'SOUZA / R.K,OK,,,Apostrophe slash dot in First Name saved exactly,DVS-POS-IND-0004
+DVS-IND-PD-004,IND-PD-firstName,P1,NEGATIVE,Personal Details,IND_PER_firstName,12345,CAPTURE,,,Digits in First Name,
+DVS-IND-PD-005,IND-PD-firstName,P1,NEGATIVE,Personal Details,IND_PER_firstName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,First Name 51 chars (max 50),BOUNDARY
+DVS-IND-PD-006,IND-PD-middleName,P1,POSITIVE,Personal Details,IND_PER_middleName,D'SOUZA / R.K,OK,,,Special characters in Middle Name,DVS-POS-IND-0005
+DVS-IND-PD-007,IND-PD-middleName,P1,NEGATIVE,Personal Details,IND_PER_middleName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Middle Name 51 chars (max 50),BOUNDARY
+DVS-IND-PD-008,IND-PD-lastName,P1,POSITIVE,Personal Details,IND_PER_lastName,D'SOUZA / R.K,OK,,,Special characters in Last Name,DVS-POS-IND-0006
+DVS-IND-PD-009,IND-PD-lastName,P1,NEGATIVE,Personal Details,IND_PER_lastName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Last Name 51 chars (max 50),BOUNDARY
+DVS-IND-PD-010,IND-PD-maidenFirstName,P1,NEGATIVE,Personal Details,IND_PER_maidenFirstName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Maiden First Name 34 chars (max 33),BOUNDARY
+DVS-IND-PD-011,IND-PD-fatherFirstName,P1,NEGATIVE,Personal Details,IND_PER_fatherFirstName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Father First Name 51 chars (max 50),BOUNDARY
+DVS-IND-PD-012,IND-PD-fatherFirstName,P1,NEGATIVE,Personal Details,IND_PER_fatherFirstName,,CAPTURE,,,Father First Name blank,DVS-POS-IND-0007
+DVS-IND-PD-013,IND-PD-motherFirstName,P1,NEGATIVE,Personal Details,IND_PER_motherFirstName,,CAPTURE,,,Mother First Name blank,DVS-POS-IND-0008
+DVS-IND-PD-014,IND-PD-motherFirstName,P1,NEGATIVE,Personal Details,IND_PER_motherFirstName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Mother First Name 51 chars (max 50),BOUNDARY
+DVS-IND-PD-015,IND-PD-dob,P0,NEGATIVE,Personal Details,IND_PER_dob,,ERROR,required,,Mandatory Date of Birth blank,
+DVS-IND-PD-016,IND-PD-dob,P1,NEGATIVE,Personal Details,IND_PER_dob,01/01/2099,ERROR,,,Future Date of Birth,BOUNDARY: DOB future
+DVS-IND-PD-017,IND-PD-dob,P1,NEGATIVE,Personal Details,IND_PER_dob,31/02/2000,ERROR,,,Impossible date 31/02/2000,BOUNDARY: Date
+DVS-IND-PD-018,IND-PD-dob,P1,NEGATIVE,Personal Details,IND_PER_dob,32/13/2000,ERROR,,,Invalid day and month,
+DVS-IND-PD-019,IND-PD-pan,P1,NEGATIVE,Personal Details,IND_PER_pan,ABCPK123,ERROR,PAN,,PAN too short (8 chars),NEGATIVE: PAN
+DVS-IND-PD-020,IND-PD-pan,P1,NEGATIVE,Personal Details,IND_PER_pan,ABCPK12345,ERROR,PAN,,PAN digits where a letter is expected,NEGATIVE: PAN
+DVS-IND-PD-021,IND-PD-pan,P1,NEGATIVE,Personal Details,IND_PER_pan,abcpk1234l,CAPTURE,,,PAN lower case (UI may upper-case it),NEGATIVE: PAN lower case
+DVS-IND-PD-022,IND-PD-pan,P1,POSITIVE,Personal Details,IND_PER_pan,ABCPK1234L,OK,,,Valid individual PAN (4th letter P),DVS-POS-IND-0009
+DVS-IND-PD-023,IND-PD-pan,P1,NEGATIVE,Personal Details,IND_PER_pan,ABCDK1234L,CAPTURE,,,PAN 4th character not P for an individual,PAN 4th character
+DVS-IND-PD-024,IND-PD-udidNumber,P1,NEGATIVE,Personal Details,IND_PER_udidNumber,121234567890123456,ERROR,,,UDID number wrong format (18 digits),NEGATIVE: UDID number
+DVS-IND-PD-025,IND-PD-percentageOfImpairment,P1,NEGATIVE,Personal Details,IND_PER_percentageOfImpairment,101,ERROR,,,Impairment percentage over 100,BOUNDARY
+DVS-IND-PD-026,IND-PD-percentageOfImpairment,P1,NEGATIVE,Personal Details,IND_PER_percentageOfImpairment,abc,CAPTURE,,,Impairment percentage letters,
+DVS-IND-PD-027,IND-PD-otherTypeOfImpairment,P1,NEGATIVE,Personal Details,IND_PER_otherTypeOfImpairment,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Other impairment 151 chars (max 150),BOUNDARY
+DVS-IND-POI-028,IND-POI-poiNumber,P0,NEGATIVE,Identity / POI,IND_POI_poiNumber,,ERROR,required,,Mandatory ID number blank,
+DVS-IND-POI-029,IND-POI-poiNumber,P1,NEGATIVE,Identity / POI,IND_POI_poiNumber,ABC1234567,ERROR,,,Passport number wrong pattern (3 letters + 7 digits),NEGATIVE: OVD number
+DVS-IND-POI-030,IND-POI-poiNumber,P1,POSITIVE,Identity / POI,IND_POI_poiNumber,A1234567,OK,,,Passport number valid pattern (1 letter + 7 digits),NEGATIVE: OVD number
+DVS-IND-POI-031,IND-POI-poiNumber,P1,NEGATIVE,Identity / POI,IND_POI_poiNumber,AAAAAAAAAAAAAAAAAAAAA,LIMIT,,,ID number 21 chars (max 20),BOUNDARY
+DVS-IND-POI-032,IND-POI-poiNumber,P1,NEGATIVE,Identity / POI,IND_POI_poiNumber,123412341234,ERROR,,,Full 12-digit Aadhaar must never be stored,NEGATIVE: Aadhaar number
+DVS-IND-POI-033,IND-POI-passportExpiryDate,P1,NEGATIVE,Identity / POI,IND_POI_passportExpiryDate,01/01/2000,ERROR,,,Passport expiry in the past,NEGATIVE: DL expiry past
+DVS-IND-POI-034,IND-POI-passportExpiryDate,P1,NEGATIVE,Identity / POI,IND_POI_passportExpiryDate,,ERROR,required,,Passport expiry blank for passport (M when A),NEGATIVE: OVD A blank
+DVS-IND-POI-035,IND-POI-passportExpiryDate,P1,NEGATIVE,Identity / POI,IND_POI_passportExpiryDate,31/02/2030,ERROR,,,Impossible passport expiry date,
+DVS-IND-CON-036,IND-CON-mobNo,P1,NEGATIVE,Contact & Address,IND_CON_mobNo,12345,ERROR,,,Mobile 5 digits,BOUNDARY: Mobile
+DVS-IND-CON-037,IND-CON-mobNo,P1,NEGATIVE,Contact & Address,IND_CON_mobNo,abcdefghij,ERROR,,,Mobile letters,BOUNDARY: Mobile
+DVS-IND-CON-038,IND-CON-mobNo,P1,POSITIVE,Contact & Address,IND_CON_mobNo,9876543210,OK,,,Valid 10 digit mobile,BOUNDARY: Mobile
+DVS-IND-CON-039,IND-CON-mobNo,P1,NEGATIVE,Contact & Address,IND_CON_mobNo,0000000000,CAPTURE,,,Mobile all zeros,
+DVS-IND-CON-040,IND-CON-emailID,P1,NEGATIVE,Contact & Address,IND_CON_emailID,abc@,ERROR,,,Email without domain,BOUNDARY: Email
+DVS-IND-CON-041,IND-CON-emailID,P1,NEGATIVE,Contact & Address,IND_CON_emailID,no-at-sign.example.com,ERROR,,,Email without @,
+DVS-IND-CON-042,IND-CON-emailID,P1,POSITIVE,Contact & Address,IND_CON_emailID,test.user@example.com,OK,,,Valid email,
+DVS-IND-CON-043,IND-CON-emailID,P1,NEGATIVE,Contact & Address,IND_CON_emailID,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@b.in,LIMIT,,,Email 255 chars (max 254),BOUNDARY
+DVS-IND-CON-044,IND-CON-add1,P0,NEGATIVE,Contact & Address,IND_CON_add1,,ERROR,required,,Mandatory Address Line 1 blank,
+DVS-IND-CON-045,IND-CON-add1,P1,NEGATIVE,Contact & Address,IND_CON_add1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Address line 1 56 chars (max 55),BOUNDARY
+DVS-IND-CON-046,IND-CON-add1,P1,POSITIVE,Contact & Address,IND_CON_add1,12/3 1ST-FLOOR A.B,OK,,,Address with slash hyphen dot,DVS-POS-IND-0012
+DVS-IND-CON-047,IND-CON-add1,P1,NEGATIVE,Contact & Address,IND_CON_add1,"#12/3, 1st-Floor (A&B) @ 5% = ~`",CAPTURE,,,Special characters in address (CERSAI may reject some),DVS-POS-IND-0012
+DVS-IND-CON-048,IND-CON-add2,P1,NEGATIVE,Contact & Address,IND_CON_add2,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Address line 2 56 chars (max 55),BOUNDARY
+DVS-IND-CON-049,IND-CON-add3,P1,NEGATIVE,Contact & Address,IND_CON_add3,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Address line 3 56 chars (max 55),BOUNDARY
+DVS-IND-CON-050,IND-CON-pincode,P0,NEGATIVE,Contact & Address,IND_CON_pincode,,ERROR,required,,Mandatory PIN blank,
+DVS-IND-CON-051,IND-CON-pincode,P1,NEGATIVE,Contact & Address,IND_CON_pincode,12345,ERROR,,,PIN 5 digits,BOUNDARY: PIN
+DVS-IND-CON-052,IND-CON-pincode,P1,NEGATIVE,Contact & Address,IND_CON_pincode,ABCDEF,ERROR,,,PIN letters,BOUNDARY: PIN
+DVS-IND-CON-053,IND-CON-pincode,P1,NEGATIVE,Contact & Address,IND_CON_pincode,600001,CAPTURE,,,PIN 600001 against the saved district / state,NEGATIVE: PIN Madurai + 600001
+DVS-IND-CON-054,IND-CON-city,P0,NEGATIVE,Contact & Address,IND_CON_city,,ERROR,required,,Mandatory City blank,
+DVS-IND-CON-055,IND-CON-city,P1,NEGATIVE,Contact & Address,IND_CON_city,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,City 51 chars (max 50),BOUNDARY
+DVS-IND-CON-056,IND-CON-poaRefNo,P0,NEGATIVE,Contact & Address,IND_CON_poaRefNo,,ERROR,required,,Mandatory Proof of Address ref no blank,
+DVS-IND-CON-057,IND-CON-poaRefNo,P1,NEGATIVE,Contact & Address,IND_CON_poaRefNo,AAAAAAAAAAAAAAAAAAAAA,LIMIT,,,POA ref no 21 chars (max 20),BOUNDARY
+DVS-IND-CON-058,IND-CON-permDigipin,P1,NEGATIVE,Contact & Address,IND_CON_permDigipin,ABC,ERROR,DIGIPIN,,DIGIPIN wrong format (expected XXX-XXX-XXXX),live item error list
+DVS-IND-CON-059,IND-CON-currDigipin,P1,NEGATIVE,Contact & Address,IND_CON_currDigipin,ABC,ERROR,DIGIPIN,,Correspondence DIGIPIN wrong format,live item error list
+DVS-IND-KYC-060,IND-KYC-declarationPlace,P0,NEGATIVE,KYC Verification,IND_KYC_declarationPlace,,ERROR,required,,Mandatory declaration place blank,
+DVS-IND-KYC-061,IND-KYC-declarationPlace,P1,NEGATIVE,KYC Verification,IND_KYC_declarationPlace,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Declaration place 51 chars (max 50),BOUNDARY
+DVS-IND-KYC-062,IND-KYC-declarationDate,P1,NEGATIVE,KYC Verification,IND_KYC_declarationDate,,ERROR,required,,Mandatory declaration date blank,
+DVS-IND-KYC-063,IND-KYC-declarationDate,P1,NEGATIVE,KYC Verification,IND_KYC_declarationDate,01/01/2099,CAPTURE,,,Declaration date in the future,
+DVS-IND-KYC-064,IND-KYC-kycDate,P1,NEGATIVE,KYC Verification,IND_KYC_kycDate,,ERROR,required,,Mandatory KYC date blank,
+DVS-IND-KYC-065,IND-KYC-kycDate,P1,NEGATIVE,KYC Verification,IND_KYC_kycDate,01/01/2099,CAPTURE,,,KYC date in the future,
+DVS-IND-KYC-066,IND-KYC-kycName,P0,NEGATIVE,KYC Verification,IND_KYC_kycName,,ERROR,required,,Mandatory KYC verifier name blank,
+DVS-IND-KYC-067,IND-KYC-kycName,P1,NEGATIVE,KYC Verification,IND_KYC_kycName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,KYC name 151 chars (max 150),BOUNDARY
+DVS-IND-KYC-068,IND-KYC-empCode,P0,NEGATIVE,KYC Verification,IND_KYC_empCode,,ERROR,required,,Mandatory employee code blank,
+DVS-IND-KYC-069,IND-KYC-empCode,P1,NEGATIVE,KYC Verification,IND_KYC_empCode,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Employee code 51 chars (max 50),BOUNDARY
+DVS-IND-KYC-070,IND-KYC-empCkycId,P0,NEGATIVE,KYC Verification,IND_KYC_empCkycId,,ERROR,required,,Employee CKYC ID blank (live: required),live 2026-10-08
+DVS-IND-KYC-071,IND-KYC-empCkycId,P1,NEGATIVE,KYC Verification,IND_KYC_empCkycId,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Employee CKYC ID 51 chars (max 50),BOUNDARY
+DVS-IND-KYC-072,IND-KYC-kycRemarks,P1,NEGATIVE,KYC Verification,IND_KYC_kycRemarks,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Remarks 251 chars (max 250),BOUNDARY
+DVS-IND-PD-073,IND-PD-middleName,P0,POSITIVE,Personal Details,IND_PER_middleName,KUMAR,OK,,,Valid Middle Name,
+DVS-IND-PD-074,IND-PD-lastName,P0,POSITIVE,Personal Details,IND_PER_lastName,SHARMA,OK,,,Valid Last Name,
+DVS-IND-PD-075,IND-PD-maidenFirstName,P1,POSITIVE,Personal Details,IND_PER_maidenFirstName,ANITHA,OK,,,Valid Maiden First Name,
+DVS-IND-PD-076,IND-PD-fatherFirstName,P1,POSITIVE,Personal Details,IND_PER_fatherFirstName,RAMESH,OK,,,Valid Father First Name,
+DVS-IND-PD-077,IND-PD-motherFirstName,P1,POSITIVE,Personal Details,IND_PER_motherFirstName,LAKSHMI,OK,,,Valid Mother First Name,DVS-POS-IND-0007
+DVS-IND-PD-078,IND-PD-dob,P0,POSITIVE,Personal Details,IND_PER_dob,15/08/1990,OK,,,Valid Date of Birth,
+DVS-IND-PD-079,IND-PD-otherTypeOfImpairment,P1,POSITIVE,Personal Details,IND_PER_otherTypeOfImpairment,LOCOMOTOR,OK,,,Valid other impairment text,
+DVS-IND-CON-080,IND-CON-add2,P1,POSITIVE,Contact & Address,IND_CON_add2,SECOND FLOOR,OK,,,Valid Address Line 2,
+DVS-IND-CON-081,IND-CON-add3,P1,POSITIVE,Contact & Address,IND_CON_add3,NEAR TEMPLE,OK,,,Valid Address Line 3,
+DVS-IND-CON-082,IND-CON-city,P1,POSITIVE,Contact & Address,IND_CON_city,CHENNAI,OK,,,Valid City,
+DVS-IND-CON-083,IND-CON-poaRefNo,P1,POSITIVE,Contact & Address,IND_CON_poaRefNo,POA123456,OK,,,Valid Proof of Address ref no,
+DVS-IND-CON-084,IND-CON-emailID,P1,POSITIVE,Contact & Address,IND_CON_emailID,first.last-1@example.co.in,OK,,,Valid email with dot hyphen digit,
+DVS-IND-KYC-085,IND-KYC-declarationPlace,P0,POSITIVE,KYC Verification,IND_KYC_declarationPlace,CHENNAI,OK,,,Valid declaration place,
+DVS-IND-KYC-086,IND-KYC-kycName,P1,POSITIVE,KYC Verification,IND_KYC_kycName,ARAVINDHAN S,OK,,,Valid KYC verifier name,
+DVS-IND-KYC-087,IND-KYC-empCode,P1,POSITIVE,KYC Verification,IND_KYC_empCode,EMP001,OK,,,Valid employee code,
+DVS-IND-KYC-088,IND-KYC-kycRemarks,P1,POSITIVE,KYC Verification,IND_KYC_kycRemarks,Verified with original,OK,,,Valid remarks,

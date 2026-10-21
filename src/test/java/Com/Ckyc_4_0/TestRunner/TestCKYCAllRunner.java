@@ -36,12 +36,15 @@ import org.testng.annotations.Listeners;
 		monochrome = true,
 		dryRun = false,
 		publish = false)
-public class TestCKYCAllRunner extends AbstractTestNGCucumberTests {
+public class TestCKYCAllRunner extends CkycCucumberTests {
+
+	/** true = record the browser window of THIS runner from the moment it opens (default off; the Test Control Panel toggle overrides). */
+	private static final boolean RECORD_SCREEN = false;
 
 	@BeforeSuite(alwaysRun = true)
 	public void setUpSuite() {
 		RunnerSuiteSupport.beforeSuite("TestCKYCAllRunner",
-				"Login → Dashboard → Masters → Search And Download → User Management (Users, Roles)");
+				"Login → Dashboard → Masters → Search And Download → User Management (Users, Roles)", RECORD_SCREEN);
 	}
 
 	@AfterSuite(alwaysRun = true)

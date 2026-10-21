@@ -35,11 +35,9 @@ public class DashboardStepDefinitions {
 	public void userIsLoggedInAndOnCkycDashboard() {
 		String dashboardPath = ConfigReader.getDashboardUrlPath();
 		String currentUrl = getDriver() != null ? getDriver().getCurrentUrl() : "";
-		// Already authenticated on app (dashboard or any /ckyc/* page e.g. location/masters) — never re-login
-		boolean alreadyInApp = currentUrl != null
-				&& !currentUrl.toLowerCase().contains("/login")
-				&& (currentUrl.contains(dashboardPath) || currentUrl.contains("/ckyc/")
-						|| currentUrl.contains("/admin/"));
+		// Already authenticated on any page of the app (dashboard, /ckyc/*, /admin/*, search-download, reports ...)
+		// - never go looking for the login page again.
+		boolean alreadyInApp = Com.Ckyc_4_0.utils.AppSession.isInsideApp(getDriver());
 		if (alreadyInApp) {
 			Hooks.runStep("Resume session (skip re-login)", "Dashboard filter bar visible", () -> {
 				if (!currentUrl.contains(dashboardPath)) {

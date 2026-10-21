@@ -17,6 +17,7 @@ public final class DvsRow {
 	public static final String NOT_RUN = "NOT RUN";
 	public static final String CAPTURED = "CAPTURED";
 	public static final String PLANNED = "PLANNED";
+	public static final String SKIPPED = "SKIPPED";
 
 	private final String sheet;
 	private final Map<String, String> values = new LinkedHashMap<>();

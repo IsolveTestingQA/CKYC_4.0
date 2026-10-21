@@ -1,0 +1,7 @@
+- [CKYC automation overview](project_ckyc_automation_overview.md) — what the framework is, where the architecture doc lives
+- [Customer Information module (in progress)](project_customer_information_module.md) — confirmed flow, CSV schema, blocked on live UI access
+- [CKYC/CERSAI validation engine](project_ckyc_validation_engine.md) — Java port, verified vs Python reference, needs Kotak config values
+- [Bulk Import live findings](project_bulk_import_live_findings.md) — real screen structure, Customer ID + REMARKS mysteries, open questions pending user reply
+- [CKYC test-data file location](reference_ckyc_test_data_location.md) — external CSV pack folder + naming rule
+- [User role & style](user_role_and_style.md) — QA automation engineer, informal shorthand, multi-day sessions
+- [Verifying Java changes without Maven](feedback_verification_without_maven.md) — javac-based compile check approach, confirmed working

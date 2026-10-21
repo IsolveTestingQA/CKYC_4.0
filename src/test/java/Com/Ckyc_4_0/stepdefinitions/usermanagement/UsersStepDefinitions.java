@@ -63,9 +63,9 @@ public class UsersStepDefinitions {
 				users::sameRoleCheckerCannotApprove, true, false);
 	}
 
-	@And("independent Checker shyam approves the TEST AUTO user request")
+	@And("independent Checker approves the TEST AUTO user request")
 	public void independentApproval() {
-		Hooks.runStep("Independent Checker shyam approves TEST AUTO user",
+		Hooks.runStep("Independent Checker approves TEST AUTO user",
 				"Different-role Checker approves successfully",
 				users::independentCheckerApprovesCreatedRequest, true, false);
 	}
@@ -88,9 +88,9 @@ public class UsersStepDefinitions {
 				users::editCreatedUser, true, false);
 	}
 
-	@And("independent Checker shyam approves the TEST AUTO edit request")
+	@And("independent Checker approves the TEST AUTO edit request")
 	public void independentApprovesEdit() {
-		Hooks.runStep("Independent Checker shyam approves TEST AUTO edit",
+		Hooks.runStep("Independent Checker approves TEST AUTO edit",
 				"Different-role Checker approves the submitted edit request",
 				users::independentCheckerApprovesEditedRequest, true, false);
 	}
@@ -102,9 +102,9 @@ public class UsersStepDefinitions {
 				users::submitEditRequestForRevert, true, false);
 	}
 
-	@And("independent Checker shyam reverts the TEST AUTO edit request")
+	@And("independent Checker reverts the TEST AUTO edit request")
 	public void independentRevertsEdit() {
-		Hooks.runStep("Independent Checker shyam reverts TEST AUTO edit",
+		Hooks.runStep("Independent Checker reverts TEST AUTO edit",
 				"Different-role Checker reverts the submitted edit request",
 				users::independentCheckerRevertsEditedRequest, true, false);
 	}
@@ -115,9 +115,9 @@ public class UsersStepDefinitions {
 				users::lockCreatedUser, true, false);
 	}
 
-	@And("branch Checker Nivijay approves the TEST AUTO lock request")
+	@And("branch Checker approves the TEST AUTO lock request")
 	public void branchApprovesLock() {
-		Hooks.runStep("Branch Checker Nivijay approves lock", "Lock is approved by branch Checker",
+		Hooks.runStep("Branch Checker approves lock", "Lock is approved by branch Checker",
 				users::branchCheckerApprovesLock, true, false);
 	}
 
@@ -127,9 +127,9 @@ public class UsersStepDefinitions {
 				users::unlockCreatedUser, true, false);
 	}
 
-	@And("branch Checker Nivijay approves the TEST AUTO unlock request")
+	@And("branch Checker approves the TEST AUTO unlock request")
 	public void branchApprovesUnlock() {
-		Hooks.runStep("Branch Checker Nivijay approves unlock", "Unlock is approved by branch Checker",
+		Hooks.runStep("Branch Checker approves unlock", "Unlock is approved by branch Checker",
 				users::branchCheckerApprovesUnlock, true, false);
 	}
 
@@ -139,9 +139,9 @@ public class UsersStepDefinitions {
 				users::dormantCreatedUser, true, false);
 	}
 
-	@And("branch Checker Nivijay approves the TEST AUTO dormant request")
+	@And("branch Checker approves the TEST AUTO dormant request")
 	public void branchApprovesDormant() {
-		Hooks.runStep("Branch Checker Nivijay approves dormant", "Dormant is approved by branch Checker",
+		Hooks.runStep("Branch Checker approves dormant", "Dormant is approved by branch Checker",
 				users::branchCheckerApprovesDormant, true, false);
 	}
 

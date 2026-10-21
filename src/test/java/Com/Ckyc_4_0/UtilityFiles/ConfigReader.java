@@ -124,6 +124,26 @@ public final class ConfigReader {
 		return Boolean.parseBoolean(get("openExtentReportAfterRun", "true"));
 	}
 
+	/** Name printed as "Tested by" in every report (Extent, Advanced HTML, Cucumber, Excel, logs). */
+	public static String testedBy() {
+		return get("testedBy", "Aravindhan");
+	}
+
+	/** The advanced end-of-run HTML report (all modules) opens in the browser when the run ends. */
+	public static boolean openAdvancedReportAfterRun() {
+		return Boolean.parseBoolean(get("openAdvancedReportAfterRun", "true"));
+	}
+
+	/** The Excel execution report opens (in Excel) when the run ends. */
+	public static boolean openExcelReportAfterRun() {
+		return Boolean.parseBoolean(get("openExcelReportAfterRun", "true"));
+	}
+
+	/** The Cucumber JVM HTML report opens in the browser when the run ends. */
+	public static boolean openCucumberReportAfterRun() {
+		return Boolean.parseBoolean(get("openCucumberReportAfterRun", "true"));
+	}
+
 	public static boolean openAllureReportAfterRun() {
 		return Boolean.parseBoolean(get("openAllureReportAfterRun", "true"));
 	}

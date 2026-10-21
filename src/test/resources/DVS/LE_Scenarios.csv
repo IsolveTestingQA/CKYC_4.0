@@ -1,0 +1,62 @@
+TC_ID,Group_ID,Priority,Type,Tab,Locator_ID,Input_Value,Expect,Error_Contains,Setup,Scenario,Source_TC
+DVS-LE-ENT-001,LE-ENT-entityName,P0,NEGATIVE,Entity Details,LE_ENT_entityName,,ERROR,required,,Mandatory Entity Name blank,live pattern (IND)
+DVS-LE-ENT-002,LE-ENT-entityName,P1,NEGATIVE,Entity Details,LE_ENT_entityName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Entity Name 151 chars (max 150),BOUNDARY
+DVS-LE-ENT-003,LE-ENT-entityName,P0,POSITIVE,Entity Details,LE_ENT_entityName,ACME TRADERS PRIVATE LIMITED,OK,,,Valid Entity Name,
+DVS-LE-ENT-004,LE-ENT-entityName,P1,NEGATIVE,Entity Details,LE_ENT_entityName,<script>alert(1)</script>,ERROR,,,Script injection in Entity Name,NEGATIVE: script
+DVS-LE-ENT-005,LE-ENT-incorporationDate,P0,NEGATIVE,Entity Details,LE_ENT_incorporationDate,,ERROR,required,,Mandatory Incorporation Date blank,
+DVS-LE-ENT-006,LE-ENT-incorporationDate,P1,NEGATIVE,Entity Details,LE_ENT_incorporationDate,01/01/2099,ERROR,,,Future Incorporation Date,BOUNDARY
+DVS-LE-ENT-007,LE-ENT-incorporationDate,P1,NEGATIVE,Entity Details,LE_ENT_incorporationDate,31/02/2000,ERROR,,,Impossible date 31/02/2000,BOUNDARY: Date
+DVS-LE-ENT-008,LE-ENT-incorporationDate,P1,POSITIVE,Entity Details,LE_ENT_incorporationDate,15/08/2005,OK,,,Valid Incorporation Date,
+DVS-LE-ENT-009,LE-ENT-placeOfIncorporation,P0,NEGATIVE,Entity Details,LE_ENT_placeOfIncorporation,,ERROR,required,,Mandatory Place of Incorporation blank,
+DVS-LE-ENT-010,LE-ENT-placeOfIncorporation,P1,NEGATIVE,Entity Details,LE_ENT_placeOfIncorporation,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Place of Incorporation 51 chars (max 50),BOUNDARY
+DVS-LE-ENT-011,LE-ENT-placeOfIncorporation,P1,POSITIVE,Entity Details,LE_ENT_placeOfIncorporation,CHENNAI,OK,,,Valid Place of Incorporation,
+DVS-LE-ENT-012,LE-ENT-pan,P0,NEGATIVE,Entity Details,LE_ENT_pan,,ERROR,required,,Mandatory PAN blank,
+DVS-LE-ENT-013,LE-ENT-pan,P1,NEGATIVE,Entity Details,LE_ENT_pan,AAACC123,ERROR,PAN,,PAN too short (8 chars),NEGATIVE: PAN
+DVS-LE-ENT-014,LE-ENT-pan,P1,NEGATIVE,Entity Details,LE_ENT_pan,AAACC12345,ERROR,PAN,,PAN digits where a letter is expected,NEGATIVE: PAN
+DVS-LE-ENT-015,LE-ENT-pan,P1,NEGATIVE,Entity Details,LE_ENT_pan,AAAPC1234A,CAPTURE,,,PAN 4th character P (individual) on a legal entity,PAN 4th character
+DVS-LE-ENT-016,LE-ENT-pan,P1,NEGATIVE,Entity Details,LE_ENT_pan,aaacc1234a,CAPTURE,,,PAN lower case,NEGATIVE: PAN lower case
+DVS-LE-ENT-017,LE-ENT-pan,P1,POSITIVE,Entity Details,LE_ENT_pan,AAACC1234A,OK,,,Valid entity PAN (4th letter C),DVS-POS-LE-0002
+DVS-LE-ENT-018,LE-ENT-tinGst,P1,NEGATIVE,Entity Details,LE_ENT_tinGst,AAAAAAAAAAAAAAAA,LIMIT,,,TIN / GST 16 chars (max 15),BOUNDARY
+DVS-LE-ENT-019,LE-ENT-tinGst,P1,POSITIVE,Entity Details,LE_ENT_tinGst,33AAACC1234A1Z5,OK,,,Valid GSTIN pattern (15 chars),
+DVS-LE-ENT-020,LE-ENT-tinGst,P1,NEGATIVE,Entity Details,LE_ENT_tinGst,INVALIDGST12345,CAPTURE,,,GSTIN with wrong pattern,
+DVS-LE-POI-021,LE-POI-poiNumber,P0,NEGATIVE,Identity / POI,LE_POI_poiNumber,,ERROR,required,,Mandatory ID number blank,
+DVS-LE-POI-022,LE-POI-poiNumber,P1,NEGATIVE,Identity / POI,LE_POI_poiNumber,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,ID number 51 chars (max 50),BOUNDARY
+DVS-LE-CON-023,LE-CON-mobNo,P1,NEGATIVE,Contact & Address,LE_CON_mobNo,12345,ERROR,,,Mobile 5 digits,BOUNDARY: Mobile
+DVS-LE-CON-024,LE-CON-mobNo,P1,NEGATIVE,Contact & Address,LE_CON_mobNo,abcdefghij,ERROR,,,Mobile letters,BOUNDARY: Mobile
+DVS-LE-CON-025,LE-CON-mobNo,P1,POSITIVE,Contact & Address,LE_CON_mobNo,9876543210,OK,,,Valid 10 digit mobile,
+DVS-LE-CON-026,LE-CON-officialTelephone,P1,NEGATIVE,Contact & Address,LE_CON_officialTelephone,AAAAAAAAAAAAA,LIMIT,,,Telephone 13 chars (max 12),BOUNDARY
+DVS-LE-CON-027,LE-CON-faxNumber,P1,NEGATIVE,Contact & Address,LE_CON_faxNumber,AAAAAAAAAAAAA,LIMIT,,,Fax 13 chars (max 12),BOUNDARY
+DVS-LE-CON-028,LE-CON-emailID,P1,NEGATIVE,Contact & Address,LE_CON_emailID,abc@,ERROR,,,Email without domain,BOUNDARY: Email
+DVS-LE-CON-029,LE-CON-emailID,P1,NEGATIVE,Contact & Address,LE_CON_emailID,no-at-sign.example.com,ERROR,,,Email without @,
+DVS-LE-CON-030,LE-CON-emailID,P1,POSITIVE,Contact & Address,LE_CON_emailID,accounts@acme-traders.co.in,OK,,,Valid email,
+DVS-LE-CON-031,LE-CON-add1,P0,NEGATIVE,Contact & Address,LE_CON_add1,,ERROR,required,,Mandatory Address Line 1 blank,
+DVS-LE-CON-032,LE-CON-add1,P1,NEGATIVE,Contact & Address,LE_CON_add1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Address line 1 56 chars (max 55),BOUNDARY
+DVS-LE-CON-033,LE-CON-add1,P1,POSITIVE,Contact & Address,LE_CON_add1,12/3 MAIN ROAD A.B,OK,,,Address with slash dot,DVS-POS-IND-0012
+DVS-LE-CON-034,LE-CON-add2,P1,NEGATIVE,Contact & Address,LE_CON_add2,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Address line 2 56 chars (max 55),BOUNDARY
+DVS-LE-CON-035,LE-CON-add2,P1,POSITIVE,Contact & Address,LE_CON_add2,SECOND FLOOR,OK,,,Valid Address Line 2,
+DVS-LE-CON-036,LE-CON-add3,P1,NEGATIVE,Contact & Address,LE_CON_add3,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Address line 3 56 chars (max 55),BOUNDARY
+DVS-LE-CON-037,LE-CON-pincode,P0,NEGATIVE,Contact & Address,LE_CON_pincode,,ERROR,required,,Mandatory PIN blank,
+DVS-LE-CON-038,LE-CON-pincode,P1,NEGATIVE,Contact & Address,LE_CON_pincode,12345,ERROR,,,PIN 5 digits,BOUNDARY: PIN
+DVS-LE-CON-039,LE-CON-pincode,P1,NEGATIVE,Contact & Address,LE_CON_pincode,ABCDEF,ERROR,,,PIN letters,BOUNDARY: PIN
+DVS-LE-CON-040,LE-CON-city,P0,NEGATIVE,Contact & Address,LE_CON_city,,ERROR,required,,Mandatory City blank,
+DVS-LE-CON-041,LE-CON-city,P1,POSITIVE,Contact & Address,LE_CON_city,CHENNAI,OK,,,Valid City,
+DVS-LE-CON-042,LE-CON-poaRefNo,P0,NEGATIVE,Contact & Address,LE_CON_poaRefNo,,ERROR,required,,Mandatory Proof of Address ref no blank,
+DVS-LE-CON-043,LE-CON-poaRefNo,P1,NEGATIVE,Contact & Address,LE_CON_poaRefNo,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,POA ref no 51 chars (max 50),BOUNDARY
+DVS-LE-CON-044,LE-CON-poaRefNo,P1,POSITIVE,Contact & Address,LE_CON_poaRefNo,POA123456,OK,,,Valid Proof of Address ref no,
+DVS-LE-CON-045,LE-CON-regDigipin,P1,NEGATIVE,Contact & Address,LE_CON_regDigipin,ABC,ERROR,DIGIPIN,,DIGIPIN wrong format (expected XXX-XXX-XXXX),live item error list (IND)
+DVS-LE-KYC-046,LE-KYC-declarationPlace,P0,NEGATIVE,KYC Verification,LE_KYC_declarationPlace,,ERROR,required,,Mandatory declaration place blank,
+DVS-LE-KYC-047,LE-KYC-declarationPlace,P1,NEGATIVE,KYC Verification,LE_KYC_declarationPlace,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Declaration place 51 chars (max 50),BOUNDARY
+DVS-LE-KYC-048,LE-KYC-declarationPlace,P1,POSITIVE,KYC Verification,LE_KYC_declarationPlace,CHENNAI,OK,,,Valid declaration place,
+DVS-LE-KYC-049,LE-KYC-declarationDate,P1,NEGATIVE,KYC Verification,LE_KYC_declarationDate,,ERROR,required,,Mandatory declaration date blank,
+DVS-LE-KYC-050,LE-KYC-declarationDate,P1,NEGATIVE,KYC Verification,LE_KYC_declarationDate,01/01/2099,CAPTURE,,,Declaration date in the future,
+DVS-LE-KYC-051,LE-KYC-kycDate,P1,NEGATIVE,KYC Verification,LE_KYC_kycDate,,ERROR,required,,Mandatory KYC date blank,
+DVS-LE-KYC-052,LE-KYC-kycDate,P1,NEGATIVE,KYC Verification,LE_KYC_kycDate,01/01/2099,CAPTURE,,,KYC date in the future,
+DVS-LE-KYC-053,LE-KYC-kycName,P0,NEGATIVE,KYC Verification,LE_KYC_kycName,,ERROR,required,,Mandatory KYC verifier name blank,
+DVS-LE-KYC-054,LE-KYC-kycName,P1,NEGATIVE,KYC Verification,LE_KYC_kycName,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,KYC name 151 chars (max 150),BOUNDARY
+DVS-LE-KYC-055,LE-KYC-kycName,P1,POSITIVE,KYC Verification,LE_KYC_kycName,ARAVINDHAN S,OK,,,Valid KYC verifier name,
+DVS-LE-KYC-056,LE-KYC-empCode,P0,NEGATIVE,KYC Verification,LE_KYC_empCode,,ERROR,required,,Mandatory employee code blank,
+DVS-LE-KYC-057,LE-KYC-empCode,P1,NEGATIVE,KYC Verification,LE_KYC_empCode,AAAAAAAAAAA,LIMIT,,,Employee code 11 chars (max 10),BOUNDARY
+DVS-LE-KYC-058,LE-KYC-empCode,P1,POSITIVE,KYC Verification,LE_KYC_empCode,EMP001,OK,,,Valid employee code,
+DVS-LE-KYC-059,LE-KYC-empCkycId,P1,NEGATIVE,KYC Verification,LE_KYC_empCkycId,AAAAAAAAAAAAAAA,LIMIT,,,Employee CKYC ID 15 chars (max 14),BOUNDARY
+DVS-LE-KYC-060,LE-KYC-kycRemarks,P1,NEGATIVE,KYC Verification,LE_KYC_kycRemarks,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,LIMIT,,,Remarks 251 chars (max 250),BOUNDARY
+DVS-LE-KYC-061,LE-KYC-kycRemarks,P1,POSITIVE,KYC Verification,LE_KYC_kycRemarks,Verified with original,OK,,,Valid remarks,

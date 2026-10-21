@@ -20,8 +20,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Type / select / read / error-text actions on DVS fields, addressed by Locator_ID (never by position).
@@ -88,8 +90,17 @@ public final class DvsFieldActions {
 			return;
 		}
 		long t0 = System.currentTimeMillis();
-		By by = By.xpath("//button[@role='tab'][normalize-space()='" + tab + "']");
-		WebElement el = waiter().until(ExpectedConditions.elementToBeClickable(by));
+		// tab buttons can carry a count / badge, so match on the label text, not the whole button text
+		By by = By.xpath("//button[@role='tab'][normalize-space()='" + tab + "' or contains(normalize-space(),'" + tab + "')]");
+		WebElement el;
+		try {
+			el = waiter().until(ExpectedConditions.elementToBeClickable(by));
+		} catch (RuntimeException e) {
+			String seen = tabLabelsOnPage();
+			DvsStepLog.step("tab-switch").field(tab).actual("tab '" + tab + "' not found. Tabs on the page: " + seen)
+					.result(DvsStepLog.FAIL).log();
+			throw new IllegalStateException("Tab '" + tab + "' not found. Tabs on the page: " + seen, e);
+		}
 		boolean switched = !"true".equals(el.getAttribute("aria-selected"));
 		if (switched) {
 			click(el);
@@ -98,6 +109,80 @@ public final class DvsFieldActions {
 		DvsStepLog.tab(tab);
 		DvsStepLog.step("tab-switch").actual(switched ? "opened tab " + tab : "tab already open").toast(toastText())
 				.result(DvsStepLog.PASS).log();
+	}
+
+	/** Raw text of every tab button on the page (for the log when a tab cannot be found). */
+	public static String tabLabelsOnPage() {
+		try {
+			List<String> out = new ArrayList<>();
+			for (WebElement t : driver().findElements(By.xpath("//button[@role='tab']"))) {
+				out.add("[" + t.getText().trim().replace("\n", " / ") + "]");
+			}
+			return out.isEmpty() ? "(no tab buttons - is a record loaded?)" : String.join(" ", out);
+		} catch (RuntimeException e) {
+			return "(could not read tabs: " + e.getMessage() + ")";
+		}
+	}
+
+	/** Red error count shown on each record tab, e.g. "Identity / POI" -> 1. Tabs without a badge are left out. */
+	public static Map<String, Integer> tabBadges() {
+		Map<String, Integer> out = new LinkedHashMap<>();
+		try {
+			for (WebElement t : driver().findElements(L.by("COM_TAB_any"))) {
+				String[] lines = t.getText().trim().split("\\R");
+				if (lines.length < 2) {
+					continue;
+				}
+				String name = lines[0].trim();
+				String last = lines[lines.length - 1].trim();
+				String lower = name.toLowerCase(Locale.ROOT);
+				if (last.matches("\\d+") && !lower.contains("queue") && !lower.equals("image")) {
+					out.put(name, Integer.parseInt(last));
+				}
+			}
+		} catch (RuntimeException ignored) {
+			// page changing - badges are read again on the next step
+		}
+		return out;
+	}
+
+	/**
+	 * Messages of the "N Validation Errors Found" dialog, one per entry (first-seen order). Header, section names,
+	 * counts, numbering, "Go to tab" and the Close button are dropped.
+	 */
+	public static List<String> validationLines(String dialogText) {
+		List<String> out = new ArrayList<>();
+		if (dialogText == null || dialogText.isBlank()) {
+			return out;
+		}
+		List<String> tabs = recordTabNames();
+		for (String raw : dialogText.split("\\R")) {
+			String s = raw.trim();
+			String l = s.toLowerCase(Locale.ROOT);
+			if (s.isEmpty() || s.matches("\\d+") || l.equals("close") || l.startsWith("go to tab") || l.equals("other")
+					|| l.contains("validation error") || l.contains("sections affected") || l.contains("section affected")
+					|| tabs.contains(s)) {
+				continue;
+			}
+			out.add(s);
+		}
+		return out;
+	}
+
+	/** Closes the validation dialog with its Close button (Escape is the fallback). */
+	public static void closeDialog() {
+		for (WebElement b : driver().findElements(By.xpath("//div[@role='dialog']//button[normalize-space()='Close']"))) {
+			try {
+				if (b.isDisplayed()) {
+					click(b);
+					sleep(300);
+					return;
+				}
+			} catch (RuntimeException ignored) {
+				// try the next one
+			}
+		}
+		dismissDialogIfOpen();
 	}
 
 	/** Visible tab names of the open record (Queue and Image are not record tabs). */

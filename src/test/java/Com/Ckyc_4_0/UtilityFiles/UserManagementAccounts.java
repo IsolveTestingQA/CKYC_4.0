@@ -12,7 +12,7 @@ import java.util.Properties;
 
 /**
  * Loads {@code TestData/user-management.properties} so checker accounts can change
- * without rewriting scenarios. Maker remains {@link ConfigReader#getUsername()}.
+ * without rewriting scenarios. Maker is {@code maker.username} (falls back to {@link ConfigReader#getUsername()}).
  */
 public final class UserManagementAccounts {
 	private static final Properties PROPS = new Properties();
@@ -32,22 +32,26 @@ public final class UserManagementAccounts {
 
 	private UserManagementAccounts() {}
 
+	/** Maker for User Management: maker.username, else the config.properties login. */
 	public static String maker() {
-		return ConfigReader.getUsername();
+		return value("maker.username", ConfigReader.getUsername());
 	}
 
 	public static String makerPassword() {
-		return ConfigReader.getPassword();
+		if (PROPS.getProperty("maker.username", "").isBlank()) {
+			return ConfigReader.getPassword();
+		}
+		return value("maker.password", defaultPassword());
 	}
 
 	/** Independent Checker for create / edit / role approval. */
 	public static String primaryChecker() {
-		return value("checker.primary", "shyam");
+		return value("checker.primary", "autochecker");
 	}
 
 	/** Branch Checker for lock / unlock / dormant only. */
 	public static String branchChecker() {
-		return value("checker.branch", "Nivijay");
+		return value("checker.branch", primaryChecker());
 	}
 
 	/** Same-role negative Checker (Admin must not approve an Admin-role Maker request). */

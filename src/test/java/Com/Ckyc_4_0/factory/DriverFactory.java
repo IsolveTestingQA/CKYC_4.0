@@ -84,6 +84,10 @@ public final class DriverFactory {
 				"--disable-features=PasswordManagerOnboarding,PasswordLeakDetection,PasswordCheck,"
 						+ "PasswordManagerUi,AutofillServerCommunication,SafeBrowsingEnhancedProtection");
 		options.addArguments("--password-store=basic");
+		// keep the automation window rendering at full speed when another window is on top of it or it is in the
+		// background (the screen recording and the screenshots depend on it)
+		options.addArguments("--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding",
+				"--disable-background-timer-throttling");
 		if (headless) {
 			options.addArguments("--headless=new");
 		}

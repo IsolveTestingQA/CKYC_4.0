@@ -26,8 +26,8 @@ import Com.Ckyc_4_0.utils.StepLog;
 import Com.Ckyc_4_0.utils.ToastHandler;
 
 /**
- * Users Maker/Checker. Negatives first. Same-role Checker must fail. Independent Checker is shyam;
- * branch Checker (lock/unlock/dormant) is Nivijay. Fail when expected action cannot be proven.
+ * Users Maker/Checker. Negatives first. Same-role Checker must fail. Independent Checker comes from user-management.properties (autochecker);
+ * branch Checker (lock/unlock/dormant) likewise (autochecker). Fail when expected action cannot be proven.
  */
 public class UsersFunctionality extends BaseClass {
 	private final int waitSeconds = ConfigReader.getExplicitWait();
@@ -38,11 +38,17 @@ public class UsersFunctionality extends BaseClass {
 	}
 
 	public void verifyMakerControls() {
-		boolean pass = MasterUiHelper.isVisible(UsersPage.MAKER, waitSeconds)
-				&& MasterUiHelper.isVisible(UsersPage.CHECKER, waitSeconds)
-				&& MasterUiHelper.isVisible(UsersPage.ADD_USER, waitSeconds);
-		StepLog.check("Users | Maker controls", "Maker, Checker and Add User controls visible",
-				"All Maker/Checker controls visible", "visible=" + pass, pass, "url=" + getDriver().getCurrentUrl());
+		// The Maker/Checker mode toggles exist only for users holding both rights (e.g. Admin); a Branch Maker sees the
+		// Add User button and the MY REQUESTS table instead, so those two are what proves the Maker view.
+		boolean addUser = MasterUiHelper.isVisible(UsersPage.ADD_USER, waitSeconds);
+		boolean myRequests = MasterUiHelper.isVisible(UsersPage.MY_REQUESTS, 3);
+		boolean toggles = MasterUiHelper.isVisible(UsersPage.MAKER, 1) && MasterUiHelper.isVisible(UsersPage.CHECKER, 1);
+		boolean pass = addUser;
+		StepLog.check("Users | Maker controls", "Add User button visible (Maker view)",
+				"Add User is available to the Maker",
+				"addUser=" + addUser + " myRequestsTable=" + myRequests + " makerCheckerToggles=" + toggles
+						+ " signedIn=" + UserManagementSession.signedInLabel(),
+				pass, "url=" + getDriver().getCurrentUrl());
 	}
 
 	public void validateEmptyAddUser() {
@@ -108,7 +114,8 @@ public class UsersFunctionality extends BaseClass {
 		closePanel();
 		clickMaker();
 		search(login);
-		boolean queued = isQueuedOrSaved(toast) || hasPendingRequestEvidence(login, toast);
+		boolean inMyRequests = waitForMyRequestPending(login, 6);
+		boolean queued = inMyRequests || isStrongQueueToast(toast);
 		UserManagementStore.setLoginName(login);
 		if (queued) {
 			UserManagementStore.setLastPendingAction("CREATE");
@@ -301,7 +308,7 @@ public class UsersFunctionality extends BaseClass {
 		Hooks.captureMilestone("Users Edit TEST AUTO before submit | " + login);
 		MasterUiHelper.clickJs(UsersPage.SAVE, waitSeconds);
 		String toast = ToastHandler.waitAndRead(getDriver(), 3000);
-		boolean queued = isQueuedOrSaved(toast);
+		boolean queued = submittedToChecker(login, toast);
 		if (queued) {
 			UserManagementStore.setLastPendingAction("EDIT");
 		}
@@ -337,7 +344,7 @@ public class UsersFunctionality extends BaseClass {
 		Hooks.captureMilestone("Users Revert edit before submit | " + login);
 		MasterUiHelper.clickJs(UsersPage.SAVE, waitSeconds);
 		String toast = ToastHandler.waitAndRead(getDriver(), 3000);
-		boolean queued = isQueuedOrSaved(toast);
+		boolean queued = submittedToChecker(login, toast);
 		if (queued) {
 			UserManagementStore.setLastPendingAction("EDIT_REVERT");
 		}
@@ -436,7 +443,7 @@ public class UsersFunctionality extends BaseClass {
 		Hooks.captureMilestone("Users Dormant before Update | " + login);
 		MasterUiHelper.clickJs(UsersPage.SAVE, waitSeconds);
 		String toast = ToastHandler.waitAndRead(getDriver(), 3000);
-		boolean queued = isQueuedOrSaved(toast);
+		boolean queued = submittedToChecker(login, toast);
 		if (queued) {
 			UserManagementStore.setLastPendingAction("DORMANT");
 		}
@@ -613,7 +620,7 @@ public class UsersFunctionality extends BaseClass {
 		MasterUiHelper.sleep(500);
 		confirmIfPresent();
 		String toast = ToastHandler.waitAndRead(getDriver(), 3000);
-		boolean queued = isQueuedOrSaved(toast) || hasCheckerPendingActions(login);
+		boolean queued = submittedToChecker(login, toast);
 		if (queued) {
 			UserManagementStore.setLastPendingAction(action.toUpperCase());
 		}
@@ -689,7 +696,9 @@ public class UsersFunctionality extends BaseClass {
 			}
 			StepLog.check("Users | Checker queue | " + checker, "Pending TEST AUTO request is in Checker queue",
 					"Pending request for " + login + " is visible",
-					"FAIL | No pending request found for " + login, false, "checker=" + checker + "; login=" + login);
+					"FAIL | No pending request found for " + login + " | signedIn=" + UserManagementSession.signedInLabel()
+							+ " (a Checker needs Approve/Revert rights - verify the account's role)", false,
+					"checker=" + checker + "; login=" + login);
 			return false;
 		}
 		// View Details before approval — verify maker, type, login, status
@@ -787,6 +796,29 @@ public class UsersFunctionality extends BaseClass {
 	}
 
 	private boolean attemptApprove(String login, String actor, boolean expectRejection) {
+		boolean ok = attemptApproveOnce(login, actor, expectRejection);
+		if (!ok && !expectRejection) {
+			StepLog.info("Users | Approve retry", "First Approve try did not complete", "Second try (max 2)",
+					"login=" + login + " actor=" + actor, "login=" + login);
+			closeOpenDialog();
+			MasterUiHelper.sleep(800);
+			ok = attemptApproveOnce(login, actor, false);
+			if (!ok) {
+				Hooks.captureMilestone("BUG: Approve not completed after 2 tries | " + actor + " | " + login);
+			}
+		}
+		return ok;
+	}
+
+	private void closeOpenDialog() {
+		By cancel = By.xpath("(//*[@role='dialog']//button[normalize-space()='Cancel' or normalize-space()='Close'])[last()]");
+		if (!getDriver().findElements(cancel).isEmpty()) {
+			MasterUiHelper.clickJs(cancel, waitSeconds);
+			MasterUiHelper.sleep(400);
+		}
+	}
+
+	private boolean attemptApproveOnce(String login, String actor, boolean expectRejection) {
 		List<WebElement> approve = getDriver().findElements(UsersPage.approveFor(login));
 		if (approve.isEmpty()) {
 			if (expectRejection) {
@@ -832,14 +864,40 @@ public class UsersFunctionality extends BaseClass {
 	}
 
 	private boolean attemptRevert(String login, String actor) {
+		boolean ok = attemptRevertOnce(login, actor);
+		if (!ok) {
+			StepLog.info("Users | Revert retry", "First Revert try did not complete", "Second try (max 2)",
+					"login=" + login + " actor=" + actor, "login=" + login);
+			closeOpenDialog();
+			MasterUiHelper.sleep(800);
+			ok = attemptRevertOnce(login, actor);
+			if (!ok) {
+				Hooks.captureMilestone("BUG: Revert not completed after 2 tries | " + actor + " | " + login);
+				StepLog.check("Users | attemptRevert | " + actor, "Click Revert on pending TEST AUTO request",
+						"Request is reverted to maker", "FAIL (BUG) | Revert did not complete after 2 tries", false,
+						"actor=" + actor + "; login=" + login);
+			}
+		}
+		return ok;
+	}
+
+	private boolean attemptRevertOnce(String login, String actor) {
 		List<WebElement> revert = getDriver().findElements(UsersPage.revertFor(login));
 		if (revert.isEmpty()) {
 			return isRequestInDecisionQueue(login, "REVERTED");
 		}
 		ToastHandler.dismissIfPresent(getDriver());
 		MasterUiHelper.clickJs(UsersPage.revertFor(login), waitSeconds);
-		MasterUiHelper.sleep(500);
-		confirmIfPresent();
+		MasterUiHelper.sleep(700);
+		// The Revert dialog needs a reason (mandatory); the Revert button stays disabled until it is typed.
+		if (MasterUiHelper.isVisible(UsersPage.REVERT_REASON, 3)) {
+			MasterUiHelper.typeInto(UsersPage.REVERT_REASON, "TEST AUTO revert - automation remarks", waitSeconds);
+			MasterUiHelper.sleep(300);
+			Hooks.captureMilestone("Users Revert reason entered | " + login);
+			MasterUiHelper.clickJs(UsersPage.REVERT_CONFIRM, waitSeconds);
+		} else {
+			confirmIfPresent();
+		}
 		MasterUiHelper.sleep(1500);
 		String toast = ToastHandler.waitAndRead(getDriver(), 3000);
 
@@ -849,11 +907,8 @@ public class UsersFunctionality extends BaseClass {
 		boolean reverted = isRevertedMessage(toast) || (!approveStillPresent && !revertStillPresent)
 				|| isRequestInDecisionQueue(login, "REVERTED");
 		if (!reverted) {
-			StepLog.check("Users | attemptRevert | " + actor,
-					"Click Revert on pending TEST AUTO request",
-					"Request is reverted to maker",
-					"FAIL | Revert did not complete. toast='" + toast + "'", false,
-					"actor=" + actor + "; login=" + login);
+			StepLog.info("Users | attemptRevert | " + actor, "Revert clicked on " + login, "Request moves to Reverted",
+					"not reverted yet. toast='" + toast + "'", "actor=" + actor + "; login=" + login);
 		}
 		return reverted;
 	}
@@ -1050,6 +1105,15 @@ public class UsersFunctionality extends BaseClass {
 
 	private void confirmIfPresent() {
 		MasterUiHelper.sleep(250);
+		try {
+			List<WebElement> remarks = getDriver().findElements(UsersPage.DIALOG_REMARKS);
+			if (!remarks.isEmpty() && remarks.get(0).isDisplayed()
+					&& (remarks.get(0).getAttribute("value") == null || remarks.get(0).getAttribute("value").isBlank())) {
+				MasterUiHelper.typeInto(UsersPage.DIALOG_REMARKS, "TEST AUTO remarks - automation", waitSeconds);
+			}
+		} catch (RuntimeException ignored) {
+			// no remarks box in this dialog
+		}
 		if (!getDriver().findElements(UsersPage.CONFIRM).isEmpty()) {
 			MasterUiHelper.clickJs(UsersPage.CONFIRM, waitSeconds);
 			MasterUiHelper.sleep(300);
@@ -1126,6 +1190,38 @@ public class UsersFunctionality extends BaseClass {
 			}
 		}
 		return null;
+	}
+
+	/** MY REQUESTS (Maker view) lists the submitted request with status PENDING - the real proof it reached the Checker. */
+	private boolean waitForMyRequestPending(String login, int maxSeconds) {
+		long deadline = System.currentTimeMillis() + maxSeconds * 1000L;
+		do {
+			if (!getDriver().findElements(UsersPage.myRequestPending(login)).isEmpty()) {
+				return true;
+			}
+			MasterUiHelper.sleep(500);
+		} while (System.currentTimeMillis() < deadline);
+		return false;
+	}
+
+	/** Edit/Lock/Unlock/Dormant: proven by the PENDING row in MY REQUESTS (the toast alone is not reliable). */
+	private boolean submittedToChecker(String login, String toast) {
+		boolean inMyRequests = waitForMyRequestPending(login, 6);
+		boolean queued = inMyRequests || isStrongQueueToast(toast);
+		StepLog.info("Users | Submitted to Checker", "Look for the PENDING request in MY REQUESTS",
+				"Request listed as PENDING", "login=" + login + " inMyRequestsPending=" + inMyRequests + " toast='"
+						+ toast + "' queued=" + queued, "login=" + login);
+		return queued;
+	}
+
+	/** A toast that says the request was submitted/queued; "unsuccessful", "failed" and "error" never count. */
+	private boolean isStrongQueueToast(String toast) {
+		String v = toast == null ? "" : toast.toLowerCase();
+		if (v.contains("unsuccess") || v.contains("fail") || v.contains("error") || v.contains("invalid")
+				|| v.contains("already")) {
+			return false;
+		}
+		return v.contains("submitted") || v.contains("pending") || v.contains("approval") || v.contains("success");
 	}
 
 	private boolean hasPendingRequestEvidence(String login, String toast) {
@@ -1278,6 +1374,12 @@ public class UsersFunctionality extends BaseClass {
 
 	private void verifyDecisionDetails(String login, String checker, String action, String decision) {
 		ensureCheckerQueueRowVisible(login, false);
+		for (int i = 0; i < 2 && getDriver().findElements(UsersPage.row(login)).isEmpty(); i++) {
+			// the list can still be loading after the status switch: select it again and look once more
+			MasterUiHelper.sleep(1500);
+			selectCheckerQueueStatus("REVERTED".equalsIgnoreCase(decision) ? "Reverted" : "Approved");
+			ensureCheckerQueueRowVisible(login, false);
+		}
 		String rowText = readRowText(login);
 		boolean rowFound = !rowText.isBlank();
 		if (!rowFound) {

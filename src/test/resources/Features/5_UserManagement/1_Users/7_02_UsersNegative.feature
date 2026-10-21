@@ -4,7 +4,7 @@
 @UserManagement @Users @UsersNegative @Negative
 Feature: User Management - Users Maker Checker (Negative)
   Accounts come from TestData/user-management.properties so they can be updated without rewriting steps.
-  Maker = config username (auto). Same-role Checker = admin (negative: same role cannot approve).
+  Maker = automaker, Checker = autochecker (TestData/user-management.properties). Same-role Checker = admin (negative: same role cannot approve).
   Seed users are never edited.
 
   Background:

@@ -15,7 +15,15 @@ public final class UsersPage {
 			"//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6 or self::div][normalize-space()='User Management']");
 	public static final By MAKER = By.xpath("//button[@aria-label='Maker mode']");
 	public static final By CHECKER = By.xpath("//button[@aria-label='Checker mode']");
-	public static final By ADD_USER = By.xpath("//button[starts-with(@aria-label,'Create a new user')]");
+	public static final By ADD_USER = By.xpath(
+			"//button[starts-with(@aria-label,'Create a new user') or normalize-space()='Add User']");
+	public static final By MY_REQUESTS = By.xpath("//*[normalize-space()='MY REQUESTS' or normalize-space()='My Requests']");
+
+	/** Maker view: the request just submitted shows in MY REQUESTS with status PENDING (case-insensitive). */
+	public static By myRequestPending(String key) {
+		return By.xpath("//*[self::tr or @role='row'][contains(normalize-space(.),\"" + safe(key) + "\")]"
+				+ "[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'pending')]");
+	}
 	public static final By CLOSE_PANEL = By.xpath("//button[@aria-label='Close panel']");
 	public static final By SAVE = By.xpath("//button[normalize-space()='Save' or normalize-space()='Update']");
 	public static final By SEARCH = By.xpath("//input[@placeholder='Search name / login / email...']");
@@ -43,6 +51,12 @@ public final class UsersPage {
 			"//button[contains(normalize-space(),'Reverted')] | //*[@role='tab'][contains(normalize-space(),'Reverted')]");
 	public static final By CONFIRM = By.xpath(
 			"//button[normalize-space()='Confirm' or normalize-space()='Yes' or normalize-space()='OK' or normalize-space()='Approve']");
+	/** Revert dialog: reason is mandatory and the Revert button stays disabled until it is typed. */
+	public static final By REVERT_REASON = By.xpath(
+			"(//*[@role='dialog']//textarea[not(@aria-hidden='true')] | //*[@role='dialog']//input[@type='text'])[last()]");
+	public static final By REVERT_CONFIRM = By.xpath("(//*[@role='dialog']//button[normalize-space()='Revert'])[last()]");
+	/** Optional remarks box some approve dialogs show. */
+	public static final By DIALOG_REMARKS = By.xpath("(//*[@role='dialog']//textarea[not(@aria-hidden='true')])[last()]");
 	public static final By ALERT = By.xpath("//*[@role='alert' or contains(@class,'MuiAlert') or contains(@class,'Toastify')]");
 	public static final By NEXT_PAGE = By.xpath(
 			"//button[@aria-label='Go to next page' or contains(@aria-label,'Next page')]");

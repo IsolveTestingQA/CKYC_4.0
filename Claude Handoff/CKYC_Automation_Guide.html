@@ -1,0 +1,566 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>iFlowCKYC 4.0 Test Automation Guide</title><style>
+@page { size: A4; margin: 18mm 15mm 18mm 15mm;
+  @bottom-center { content: "iFlowCKYC 4.0 Test Automation Guide  -  page " counter(page) " of " counter(pages); font: 8.5pt Segoe UI, Arial, sans-serif; color: #6b6a64; }
+  @top-right { content: "Tested by Aravindhan"; font: 8.5pt Segoe UI, Arial, sans-serif; color: #6b6a64; } }
+@page :first { @bottom-center { content: ""; } @top-right { content: ""; } }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10pt; line-height: 1.45; color: #1f2933; margin: 0; }
+h1 { font-size: 19pt; color: #0b2a6f; border-bottom: 2px solid #1d4ed8; padding-bottom: 4px; margin: 26px 0 10px; page-break-after: avoid; }
+h2 { font-size: 14pt; color: #0b2a6f; margin: 20px 0 6px; page-break-after: avoid; }
+h3 { font-size: 11pt; color: #1d4ed8; margin: 14px 0 5px; page-break-after: avoid; }
+p, li { orphans: 3; widows: 3; }
+ul, ol { margin: 4px 0 8px 0; padding-left: 22px; }
+li { margin: 2px 0; }
+code { font-family: Consolas, "Courier New", monospace; font-size: 8.8pt; background: #f1f3f7; padding: 0 3px; border-radius: 3px; color: #0b2a6f; word-break: break-word; }
+table { border-collapse: collapse; width: 100%; margin: 6px 0 12px; }
+table.grid th { background: #0b2a6f; color: #fff; text-align: left; padding: 5px 7px; font-size: 9pt; }
+table.grid td { border: 1px solid #cfd6e4; padding: 4px 7px; vertical-align: top; }
+table.grid tr:nth-child(even) td { background: #f7f9fc; }
+table.grid tr { page-break-inside: avoid; }
+table.small { font-size: 8.8pt; }
+.fig { text-align: center; margin: 8px 0 12px; page-break-inside: avoid; }
+.fig svg { max-width: 100%; height: auto; }
+.cap { font-size: 8.5pt; color: #5b6472; margin-top: 2px; }
+.note { background: #fff7e6; border-left: 4px solid #d97706; padding: 7px 10px; font-size: 9pt; page-break-inside: avoid; }
+.foot { margin-top: 18px; color: #5b6472; font-style: italic; }
+.cover { height: 235mm; padding-top: 55mm; }
+.cover .brand { font-size: 13pt; letter-spacing: 3px; color: #1d4ed8; text-transform: uppercase; }
+.cover .title { font-size: 34pt; color: #0b2a6f; border: 0; margin: 6px 0 4px; page-break-before: avoid; }
+.cover .subtitle { font-size: 13pt; color: #444; margin: 0 0 30px; }
+table.meta td { border-bottom: 1px solid #d8dde8; padding: 6px 8px; font-size: 10pt; }
+table.meta td:first-child { width: 28%; color: #5b6472; font-weight: 600; }
+.toc { page-break-before: always; }
+thead { display: table-header-group; }
+table.grid tr:first-child, table.grid thead tr { break-after: avoid; }
+h1.pb { page-break-before: always; margin-top: 0; }
+.toc h2 { margin-top: 0; font-size: 18pt; }
+.toc ol { font-size: 11pt; line-height: 1.9; }
+.toc ol ol { font-size: 10pt; line-height: 1.6; }
+.toc a { color: #1d4ed8; text-decoration: none; }
+</style></head><body><div class="cover">
+  <div class="brand">iFlowCKYC 4.0</div>
+  <h1 class="title">Test Automation Guide</h1>
+  <p class="subtitle">How the framework is built, how to run it, and every condition each module checks</p>
+  <table class="meta">
+    <tr><td>Audience</td><td>Automation test engineers joining or taking over the CKYC 4.0 suite</td></tr>
+    <tr><td>Product under test</td><td>iFlowCKYC 4.0 web application (live product)</td></tr>
+    <tr><td>Project</td><td>CKYC_4.0 - Java 21, Maven, Selenium 4.41, Cucumber 7.34, TestNG 7.12</td></tr>
+    <tr><td>Author</td><td>Aravindhan (Tested by)</td></tr>
+    <tr><td>Version</td><td>1.1 - 18 October 2026 (adds screen recording, completion step, run summary)</td></tr>
+    <tr><td>Status</td><td>Login, Dashboard, Masters, Search, User Management, Concurrent session and Reports are automated. DVS 2.0 and Image Upload are parked until the product is frozen.</td></tr>
+  </tbody></table>
+</div>
+
+<div class="toc">
+<h2>Contents</h2>
+<ol>
+<li><a href="#s1">Purpose, scope and golden rules</a></li>
+<li><a href="#s2">Quick start</a></li>
+<li><a href="#s3">Architecture and code layout</a></li>
+<li><a href="#s4">How one test run works</a></li>
+<li><a href="#s5">Configuration reference</a></li>
+<li><a href="#s6">Runners, tags and the Test Control Panel</a></li>
+<li><a href="#s7">Pop-ups, recovery and retries</a></li>
+<li><a href="#s8">Reports and evidence</a></li>
+<li><a href="#s9">Module guide: conditions and expected results</a>
+  <ol type="a">
+    <li><a href="#m1">Login</a></li><li><a href="#m2">Dashboard</a></li><li><a href="#m3">Masters</a></li>
+    <li><a href="#m4">Search And Download</a></li><li><a href="#m5">User Management (Roles, Users)</a></li>
+    <li><a href="#m6">Concurrent session</a></li><li><a href="#m7">Reports compare</a></li><li><a href="#m8">DVS 2.0 and Image Upload (parked)</a></li>
+  </ol></li>
+<li><a href="#s10">Adding a new module: checklist</a></li>
+<li><a href="#s11">Coding conventions</a></li>
+<li><a href="#s12">Troubleshooting</a></li>
+<li><a href="#s13">Known application behaviours and open items</a></li>
+<li><a href="#s14">Glossary and file map</a></li>
+</ol>
+</div>
+
+<h1 id="s1">1. Purpose, scope and golden rules</h1>
+<p>This suite checks the iFlowCKYC 4.0 web application end to end through the browser. It is a <b>hybrid BDD framework</b>: tests are written as Cucumber scenarios, but every check, locator and report is handled in plain Java layers so a new engineer can find any behaviour in one place.</p>
+<p>The application is a <b>live product</b>. The suite is therefore written to read, compare and, where it creates data, to create only clearly marked test data and to leave the application as it found it.</p>
+
+<h3>Golden rules (read these first)</h3>
+<table class="grid"><thead><tr><th style="width:26%">Rule</th><th>What it means in practice</th></tr></thead><tbody>
+<tr><td>Live product - touch only test data</td><td>Create, edit or delete only records whose name starts with <code>TEST</code> / <code>TEST AUTO</code> / <code>testauto</code>. Never edit seed users, Super Admin, or existing masters. DVS suites restore the record after every row and stop if the restore cannot be verified.</td></tr>
+<tr><td>One browser tab, one session</td><td>The application refuses to run if it is open in another tab on the machine, and a second login logs the first out. Before the browser starts, the framework closes other iFlowCKYC tabs (not your report tabs). Never open the app manually while a run is going.</td></tr>
+<tr><td>Navigation bar first</td><td>Always find and click the side-navigation item like a user. Use a direct URL only as a fallback when the nav item is missing or did not land on the page. This applies to every module.</td></tr>
+<tr><td>No credentials in code</td><td>Logins come from <code>config.properties</code> and <code>TestData/user-management.properties</code>. Do not hard-code or paste passwords in code, features, logs or tickets. Do not commit <code>config.properties</code>.</td></tr>
+<tr><td>Soft assertions</td><td>A failed check is recorded and the scenario continues, so one run shows every defect. The scenario is marked failed at the end. Only a missing prerequisite or a stop request ends a scenario early.</td></tr>
+<tr><td>A missing expected message is a bug</td><td>If an action should show a toast and none appears, the result is reported as a BUG, not silently passed.</td></tr>
+<tr><td>Evidence for every result</td><td>Every failed check has a screenshot. Key steps also have passing screenshots. Reports show "Tested by" the engineer named in <code>testedBy</code>.</td></tr>
+<tr><td>Locators: verified, role-based</td><td>Prefer <code>aria-label</code>, <code>role</code>, <code>data-testid</code> and visible text. Verify a locator against the live page before it goes into a Page class.</td></tr>
+<tr><td>Do not drive Search or DVS by hand tools while a run is active</td><td>Debugger tools attached to the browser changed the application's behaviour once. The Selenium runner is the test of record.</td></tr>
+</tbody></table>
+
+<h1 id="s2">2. Quick start</h1>
+<h3>2.1 Prerequisites</h3>
+<ul>
+<li>Windows machine (the existing-tab closer uses Windows UI Automation; the rest is portable).</li>
+<li>JDK 21 and Maven 3.9+; IntelliJ IDEA (any recent version).</li>
+<li>Google Chrome (the driver is downloaded automatically by WebDriverManager).</li>
+<li>Network access to the application URL in <code>config.properties</code> and a working login for the Maker user.</li>
+</ul>
+<h3>2.2 First run</h3>
+<ol>
+<li>Open the project folder in IntelliJ and let Maven import dependencies.</li>
+<li>Open <code>src/test/resources/config.properties</code>. Set <code>url</code>, <code>username</code>, <code>password</code>, <code>browser=chrome</code>, <code>testedBy</code>. All other keys have defaults (see section 5; the documented list is <code>config.properties.example</code>).</li>
+<li>Close any open iFlowCKYC browser tab.</li>
+<li>Run <code>TestRunner/TestControlPanelRunner</code> (right-click, Run as TestNG). Chrome opens on the login page and the <b>Test Control Panel</b> pop-up appears.</li>
+<li>Choose the type of testing (Positive / Negative / Both), tick the modules, press <b>Start Test</b>. The run continues in the same browser.</li>
+<li>When the run ends the Advanced report, Extent report and Cucumber report open automatically.</li>
+</ol>
+<p>Any single-module runner (for example <code>TestSearchRunner</code>) shows the same panel, pre-ticked with that module. To run without a human present set <code>headless=true</code> (or <code>interactiveBlockerPrompt=false</code>): the panel and the pop-ups are skipped and the runner's default tags are used.</p>
+<h3>2.3 Where the results are</h3>
+<table class="grid"><thead><tr><th>Output</th><th>Location (under the project folder)</th></tr></thead><tbody>
+<tr><td>Advanced HTML report (all modules, steps, screenshots)</td><td><code>Report Output/Advanced Report/&lt;date&gt;/&lt;runner&gt;/CKYC_Advanced_Report_&lt;time&gt;.html</code></td></tr>
+<tr><td>Extent report</td><td><code>Report Output/Extent/&lt;date&gt;/&lt;runner&gt;/</code></td></tr>
+<tr><td>Cucumber JVM report</td><td><code>Report Output/Cucumber JVM Reports/&lt;date&gt;/&lt;runner&gt;/cucumber-html-reports/overview-features.html</code></td></tr>
+<tr><td>Excel execution report</td><td><code>Report Output/Excel/&lt;date&gt;/&lt;runner&gt;/</code></td></tr>
+<tr><td>Execution log (text and HTML)</td><td><code>Report Output/Execution Logs/&lt;date&gt;/&lt;runner&gt;/</code></td></tr>
+<tr><td>Screenshots</td><td><code>Report Output/Screenshots/&lt;date&gt;/</code></td></tr>
+<tr><td>Module workbooks</td><td><code>Report Output/Reports Compare/</code>, <code>Report Output/Search Results/</code>, dashboard data Excel, DVS result workbooks</td></tr>
+<tr><td>Application log</td><td><code>logs/ckyc-automation.log</code> (rolling)</td></tr>
+</tbody></table>
+
+<h1 class="pb" id="s3">3. Architecture and code layout</h1>
+<div class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 430" width="100%" role="img" font-family="Segoe UI, Arial, sans-serif"><defs><marker id="ararch" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect x="30" y="14" width="330" height="50" rx="7" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><text x="195.0" y="32.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#26215C">Feature files (Gherkin)</text><text x="195.0" y="50.0" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#534AB7">src/test/resources/Features - what is tested</text><line x1="195" y1="64" x2="195" y2="80" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#ararch)"/><rect x="30" y="80" width="330" height="50" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="195.0" y="98.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">Step definitions</text><text x="195.0" y="116.0" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">stepdefinitions/&lt;module&gt; - glue only, one line per step</text><line x1="195" y1="130" x2="195" y2="146" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#ararch)"/><rect x="30" y="146" width="330" height="50" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="195.0" y="164.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">Functionality</text><text x="195.0" y="182.0" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">functionality/&lt;module&gt; - business logic and every check</text><line x1="195" y1="196" x2="195" y2="212" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#ararch)"/><rect x="30" y="212" width="330" height="50" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="195.0" y="230.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">Pages</text><text x="195.0" y="248.0" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">pages/&lt;module&gt; - locators only, no logic</text><line x1="195" y1="262" x2="195" y2="278" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#ararch)"/><rect x="30" y="278" width="330" height="50" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="195.0" y="296.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">Utilities</text><text x="195.0" y="314.0" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">BaseClass, ConfigReader, MasterUiHelper, PopupHandler</text><line x1="195" y1="328" x2="195" y2="344" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#ararch)"/><rect x="30" y="344" width="330" height="50" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="195.0" y="362.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">Browser (Selenium WebDriver)</text><text x="195.0" y="380.0" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">one Chrome window, one session</text><rect x="400" y="14" width="250" height="396" rx="7" fill="#FAEEDA" stroke="#854F0B" stroke-width="1" stroke-dasharray="5 4"/><text x="525.0" y="212.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#412402"></text><text x="525" y="36" text-anchor="middle" font-size="13" font-weight="600" fill="#412402">Cross-cutting</text><text x="418" y="62" text-anchor="start" font-size="12" font-weight="400" fill="#412402">Hooks (@Before / @After)</text><text x="418" y="90" text-anchor="start" font-size="12" font-weight="400" fill="#412402">Hooks.runStep - step funnel</text><text x="418" y="118" text-anchor="start" font-size="12" font-weight="400" fill="#412402">StepLog.check - result funnel</text><text x="418" y="146" text-anchor="start" font-size="12" font-weight="400" fill="#412402">SoftAssertManager</text><text x="418" y="174" text-anchor="start" font-size="12" font-weight="400" fill="#412402">PopupHandler / FailureContext</text><text x="418" y="202" text-anchor="start" font-size="12" font-weight="400" fill="#412402">Test Control Panel</text><text x="418" y="230" text-anchor="start" font-size="12" font-weight="400" fill="#412402">ExecutionOrder</text><text x="418" y="258" text-anchor="start" font-size="12" font-weight="400" fill="#412402">RunnerSuiteSupport (suite)</text><text x="418" y="286" text-anchor="start" font-size="12" font-weight="400" fill="#412402">Reports: Advanced, Extent,</text><text x="418" y="314" text-anchor="start" font-size="12" font-weight="400" fill="#412402">Cucumber, Excel, logs, Allure</text><text x="418" y="348" text-anchor="start" font-size="11" font-weight="400" fill="#854F0B">Every layer may call the</text><text x="418" y="363" text-anchor="start" font-size="11" font-weight="400" fill="#854F0B">cross-cutting classes.</text></svg><div class="cap">Figure 1 - Layers. Code flows downward; each layer knows only the layer below it.</div></div>
+<h3>3.1 Where things live</h3>
+<table class="grid"><thead><tr><th style="width:30%">Package / folder</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><code>src/test/resources/Features/</code></td><td>Gherkin features, one folder per module (<code>1_Login</code>, <code>2_Dashboard</code>, <code>3_Masters</code>, <code>4_SearchAndDownload</code>, <code>5_UserManagement</code>, <code>6_ConcurrentSession</code>, <code>7_DVS</code>, <code>8_Reports</code>).</td></tr>
+<tr><td><code>stepdefinitions/&lt;module&gt;</code></td><td>Glue. Each step wraps its work in <code>Hooks.runStep(...)</code> and calls a Functionality method. <code>stepdefinitions/common/Hooks</code> holds the hooks and the step funnel.</td></tr>
+<tr><td><code>functionality/&lt;module&gt;</code></td><td>Business logic: the user journey and every check (<code>StepLog.check</code>). The only layer that decides pass or fail.</td></tr>
+<tr><td><code>pages/&lt;module&gt;</code></td><td>Locators (<code>By</code> constants and small builders such as <code>UsersPage.editFor(login)</code>). No logic.</td></tr>
+<tr><td><code>utils/</code></td><td>Helpers: <code>MasterUiHelper</code> (click, type, select, search), <code>PopupHandler</code> (blockers and decision pop-up), <code>ToastHandler</code>, <code>StepLog</code>, <code>FailureContext</code>, <code>AppSession</code>, <code>panel/*</code> (Test Control Panel), <code>reports/*</code>, <code>dvs/*</code>.</td></tr>
+<tr><td><code>UtilityFiles/</code></td><td>Framework services: <code>BaseClass</code> (driver, config), <code>ConfigReader</code>, report writers (<code>ExtentReportManager</code>, <code>AdvancedRunReport</code>, <code>CucumberReport</code>, <code>ExcelReport</code>, <code>ExecutionLogger</code>), <code>ScreenshotManager</code>, <code>SoftAssertManager</code>, <code>UserManagement*</code> (accounts, session, store), <code>ExistingTabCloser</code>.</td></tr>
+<tr><td><code>TestRunner/</code></td><td>One TestNG runner class per module plus <code>TestControlPanelRunner</code>. All extend <code>CkycCucumberTests</code>. <code>RunnerSuiteSupport</code> does the common suite start and end.</td></tr>
+<tr><td><code>factory/</code>, <code>constants/</code></td><td>Browser creation (<code>DriverFactory</code>) and framework constants.</td></tr>
+<tr><td><code>src/test/resources/</code></td><td><code>config.properties</code>, <code>TestData/</code>, <code>DVS/</code>, <code>Reports/</code> (HTML templates), <code>testng*.xml</code>, <code>log4j2.xml</code>.</td></tr>
+<tr><td><code>Claude Handoff/</code>, <code>CKYC_OFFICIAL_DOCUMENTS/</code></td><td>Hand-over notes, design packs and the official specifications.</td></tr>
+</tbody></table>
+
+<h3>3.2 The two funnels</h3>
+<p><b>Hooks.runStep(description, expected, action, captureOnSuccess, mandatory)</b> - every step definition runs its action through this method. It: records the step context (feature, scenario, step) for pop-ups; skips the step if a stop or skip was requested; runs the action inside the blocker handler; on an exception detects a server-error page, tries one safe refresh and retry, and if the step is <i>mandatory</i> and the failure looks like "element missing" shows the decision pop-up; otherwise records a soft failure with a screenshot.</p>
+<p><b>StepLog.check(scenario, step, expected, actual, passed, testData)</b> - every business check reports through this single method. It writes the row to Excel, Extent and the Advanced report, and a failed check becomes a soft assertion failure. Never use a raw <code>assert</code> inside a Functionality class.</p>
+
+<h1 id="s4">4. How one test run works</h1>
+<div class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 544" width="100%" role="img" font-family="Segoe UI, Arial, sans-serif"><defs><marker id="arlife" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect x="130.0" y="16" width="420" height="46" rx="7" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><text x="340.0" y="32.56" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#26215C">1  Runner class starts (TestNG)</text><text x="340.0" y="49.12" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#534AB7">@BeforeSuite -> RunnerSuiteSupport.beforeSuite</text><line x1="340.0" y1="62" x2="340.0" y2="80" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arlife)"/><rect x="130.0" y="82" width="420" height="46" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="340.0" y="98.56" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">2  Existing app tabs closed, browser launched</text><text x="340.0" y="115.12" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">ExistingTabCloser, DriverFactory, login URL</text><line x1="340.0" y1="128" x2="340.0" y2="146" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arlife)"/><rect x="130.0" y="148" width="420" height="46" rx="7" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/><text x="340.0" y="164.56" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#412402">3  Test Control Panel popup (unless headless)</text><text x="340.0" y="181.12" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#854F0B">type of testing, modules, options, Start</text><line x1="340.0" y1="194" x2="340.0" y2="212" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arlife)"/><rect x="130.0" y="214" width="420" height="46" rx="7" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/><text x="340.0" y="230.56" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#412402">4  Selection applied</text><text x="340.0" y="247.12" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#854F0B">cucumber.filter.tags, cucumber.features, ckyc.&lt;key&gt;</text><line x1="340.0" y1="260" x2="340.0" y2="278" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arlife)"/><rect x="130.0" y="280" width="420" height="46" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="340.0" y="296.56" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">5  Scenarios run in panel order</text><text x="340.0" y="313.12" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">Login, Dashboard, Masters, Search, Roles, Users, DVS, Reports, Concurrent</text><line x1="340.0" y1="326" x2="340.0" y2="344" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arlife)"/><rect x="130.0" y="346" width="420" height="46" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="340.0" y="362.56" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">6  Per scenario</text><text x="340.0" y="379.12" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">@Before -> steps via Hooks.runStep -> @After</text><line x1="340.0" y1="392" x2="340.0" y2="410" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arlife)"/><rect x="130.0" y="412" width="420" height="46" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="340.0" y="428.56" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">7  @AfterSuite: reports written and opened</text><text x="340.0" y="445.12" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">Advanced, Extent, Cucumber, Excel, logs, Allure</text><line x1="340.0" y1="458" x2="340.0" y2="476" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arlife)"/><rect x="130.0" y="478" width="420" height="46" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="340.0" y="494.56" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">8  Completion prompt, logout, browser closed</text><text x="340.0" y="511.12" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">suiteCompletionWaitSeconds (headed runs)</text></svg><div class="cap">Figure 2 - Run lifecycle.</div></div>
+<h3>4.1 Selection to execution</h3>
+<ol>
+<li><b>Start:</b> <code>RunnerSuiteSupport.beforeSuite</code> closes other app tabs, launches Chrome, opens the login page.</li>
+<li><b>Panel:</b> the Test Control Panel returns the selection. <code>ControlPanel.apply</code> sets the JVM properties <code>cucumber.filter.tags</code> and <code>cucumber.features</code> (all feature folders) and any <code>ckyc.&lt;key&gt;</code> overrides before Cucumber lists the scenarios. This is why a single-module runner can run other modules.</li>
+<li><b>Order:</b> <code>CkycCucumberTests.scenarios()</code> re-orders the chosen scenarios with <code>ExecutionOrder</code>: Login, Dashboard, State, District, Pincode, Hierarchy, Search, Search interactive, Roles (positive, negative), Users (positive, negative), DVS Individual, DVS Legal, DVS workbook runs, Reports, Concurrent session last (it signs the first session out). Positive runs before Negative inside a module. Without the panel the order is Cucumber's own (folder name).</li>
+<li><b>Scenarios:</b> <code>@Before</code> starts the Extent test and the Advanced report scenario, applies skip/abort flags; steps run; <code>@After</code> checks the final page, flushes soft failures, closes the scenario record.</li>
+<li><b>End:</b> <code>@AfterSuite</code> generates all reports, opens them, waits <code>suiteCompletionWaitSeconds</code> on the completion prompt, logs out and closes the browser.</li>
+</ol>
+<h3>4.2 "Already logged in" rule</h3>
+<p>Every feature starts with <i>user is logged in and on CKYC dashboard</i>. <code>AppSession.isInsideApp</code> decides whether to resume or to log in: the URL is not <code>/login</code> and is the dashboard, <code>/ckyc/</code> or <code>/admin/</code>, <b>or</b> any other page of the same host with a real path and no login form on screen. If inside the app the step only goes to the dashboard (via the nav bar) and checks the filter bar. Otherwise it performs the login steps.</p>
+<h3>4.3 Scenario status</h3>
+<table class="grid"><thead><tr><th>Status</th><th>When</th></tr></thead><tbody>
+<tr><td>Passed</td><td>No soft failure recorded and no skip/abort.</td></tr>
+<tr><td>Failed</td><td>At least one failed check or step. All steps were still executed.</td></tr>
+<tr><td>Skipped</td><td>The user chose Skip this case / Skip this feature, or a mandatory prerequisite blocked the feature ("Stop module").</td></tr>
+<tr><td>Aborted</td><td>The user chose Stop everything. The browser is closed, reports so far are written, every remaining scenario is aborted.</td></tr>
+</tbody></table>
+
+<h1 id="s5">5. Configuration reference</h1>
+<p>Sources, highest priority first: <b>(1)</b> JVM property <code>-Dckyc.&lt;key&gt;=value</code> (the Control Panel uses this for its choices); <b>(2)</b> <code>src/test/resources/config.properties</code>; <b>(3)</b> <code>Configuration/config.properties</code> overlay; <b>(4)</b> the default in code. Read values with <code>ConfigReader</code> / <code>BaseClass.getProperty</code>, never directly.</p>
+<table class="grid small"><thead><tr><th>Key</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>url</code>, <code>username</code>, <code>password</code></td><td>-</td><td>Application URL and the Maker login used by the Login scenario. Required.</td></tr>
+<tr><td><code>dashboardUrl</code></td><td>/dashboard</td><td>Path that proves a successful login.</td></tr>
+<tr><td><code>browser</code>, <code>headless</code>, <code>maximizeWindow</code>, <code>deleteCookies</code></td><td>chrome, false, true, true</td><td>Browser start-up. <code>headless=true</code> disables every human pop-up.</td></tr>
+<tr><td><code>implicitWait</code>, <code>explicitWait</code>, <code>loginWait</code>, <code>pageLoadTimeout</code></td><td>0, 8, 25, 40 (s)</td><td>Waits. Implicit wait is 0 on purpose: use explicit waits only.</td></tr>
+<tr><td><code>continueOnFailure</code></td><td>true</td><td>Soft-assertion behaviour.</td></tr>
+<tr><td><code>resetToLoginAfterScenario</code></td><td>false</td><td>Stay on the dashboard after a scenario.</td></tr>
+<tr><td><code>interactiveBlockerPrompt</code></td><td>true</td><td>Show the on-page decision pop-ups. false = unattended: blockers are auto-dismissed and retried once.</td></tr>
+<tr><td><code>interactiveBlockerWaitSeconds</code></td><td>60</td><td>Maximum wait for an answer. No answer = Skip this case. Never more than 60.</td></tr>
+<tr><td><code>suiteCompletionWaitSeconds</code></td><td>120</td><td>End-of-suite prompt wait before logout.</td></tr>
+<tr><td><code>retryFailedScenarios</code>, <code>maxScenarioRetries</code></td><td>true, 1</td><td>Retry of failed scenarios. Only Login, Dashboard, Search and Masters scenarios are eligible; <code>@UserManagement</code> and <code>@ConcurrentSession</code> are never retried (decided by tag).</td></tr>
+<tr><td><code>screenshotDelayBeforeMs</code>, <code>screenshotDelayAfterMs</code>, <code>screenshotOnEachFilter</code></td><td>200, 0, false</td><td>Screenshot timing. Each-filter screenshots are off to keep runs fast.</td></tr>
+<tr><td><code>filterRefreshWaitMs</code></td><td>800</td><td>Settle time after a dashboard filter click (the code also polls until totals are consistent).</td></tr>
+<tr><td><code>recording.enabled</code>, <code>recording.fps</code>, <code>recording.maxWidth</code>, <code>recording.quality</code></td><td>false, 5, 1280, 0.6</td><td>Screen recording (off by default). See section 8.1.</td></tr>
+<tr><td><code>openExcelReportAfterRun</code>, <code>finalScreenshot.fullScreen</code></td><td>true, true</td><td>Open the Excel execution report at the end; also save a full-screen picture after completion.</td></tr>
+<tr><td><code>testedBy</code></td><td>Aravindhan</td><td>Name printed as "Tested by" in every report.</td></tr>
+<tr><td><code>openExtentReportAfterRun</code>, <code>openAdvancedReportAfterRun</code>, <code>openCucumberReportAfterRun</code>, <code>openAllureReportAfterRun</code></td><td>true</td><td>Open the report when the run ends. Allure needs the <code>allure</code> CLI; otherwise run <code>open-allure.ps1</code>.</td></tr>
+<tr><td><code>closeExistingAppTabs</code>, <code>appTabTitleKeywords</code></td><td>true, iFlowCKYC</td><td>Close existing Chrome/Edge tabs whose title contains a keyword before launch. Report tabs ("... Automation Report", "Tested by") are kept.</td></tr>
+<tr><td><code>openLoginDirect</code>, <code>loginPath</code></td><td>false, /login</td><td>Leave off: this server answers HTTP 500 for a direct hit on <code>/login</code>.</td></tr>
+<tr><td><code>controlPanel.onRunners</code>, <code>panel.timeoutMinutes</code></td><td>true, 60</td><td>Show the Control Panel from every runner; minutes it waits for Start.</td></tr>
+<tr><td><code>reports.apps</code>, <code>reports.constitutions</code>, <code>reports.categories</code>, <code>reports.columnMismatchIsFail</code></td><td>NEW,UPDATE / ALL,Individual,Legal entity / all / true</td><td>Reports compare scope and strictness.</td></tr>
+<tr><td><code>search.resultTimeoutSeconds</code>, <code>search.noResponseAfterSeconds</code></td><td>90, 35</td><td>How long to wait for the application's answer after Search is clicked.</td></tr>
+<tr><td><code>search.report.includeNames</code></td><td>false</td><td>Customer names are hidden in Search reports unless true.</td></tr>
+<tr><td><code>dvs.cust.individual</code>, <code>dvs.cust.minor</code>, <code>dvs.cust.le</code></td><td>test records</td><td>Customer ids opened by DVS runs (comma list, first found in the Maker queue wins).</td></tr>
+<tr><td><code>dvs.allowDirectUrl</code>, <code>dvs.dateFormat</code>, <code>dvs.queue.rowXpath</code>, <code>dvs.stuckPrompt</code></td><td>true, dd-MM-yyyy, ...</td><td>DVS navigation and pop-up options (module is parked).</td></tr>
+<tr><td><code>excelReportPath</code>, <code>extentReportPath</code>, <code>executionLogPath</code>, <code>currentDataPath</code></td><td>Report Output/...</td><td>Output folders.</td></tr>
+</tbody></table>
+<p>User Management accounts are not in <code>config.properties</code>; they are in <code>TestData/user-management.properties</code> (section 9e).</p>
+
+<h1 id="s6">6. Runners, tags and the Test Control Panel</h1>
+<h3>6.1 Runners</h3>
+<table class="grid small"><thead><tr><th>Runner</th><th>Features</th><th>Tag filter (default)</th></tr></thead><tbody>
+<tr><td><b>TestControlPanelRunner</b></td><td>all</td><td>chosen in the panel (default <code>@Positive and not @Deferred</code>)</td></tr>
+<tr><td>TestCKYCAllRunner, TestRunnerCkyc</td><td>all positive modules</td><td><code>@Positive and not @Deferred</code> / <code>@Positive</code></td></tr>
+<tr><td>TestLoginRunner</td><td>1_Login</td><td><code>@Login</code></td></tr>
+<tr><td>TestDashboardRunner</td><td>1_Login, 2_Dashboard</td><td><code>@Positive</code></td></tr>
+<tr><td>TestMastersRunner</td><td>3_Masters</td><td><code>@Positive</code></td></tr>
+<tr><td>TestSearchRunner, TestSearchAndDownloadRunner</td><td>4_SearchAndDownload</td><td><code>@Positive</code> ( + <code>not @Deferred</code>)</td></tr>
+<tr><td>TestSearchInteractiveRunner</td><td>Search (interactive)</td><td><code>@SearchInteractive</code></td></tr>
+<tr><td>TestUserManagementRunner</td><td>5_UserManagement</td><td><code>@UserManagement</code></td></tr>
+<tr><td>TestConcurrentSessionRunner</td><td>1_Login, 6_ConcurrentSession</td><td><code>@ConcurrentSession</code></td></tr>
+<tr><td>TestReportsRunner</td><td>8_Reports</td><td><code>@Reports</code></td></tr>
+<tr><td>TestDVSIndividual{Positive,Negative}Runner, TestDVSLegal{Positive,Negative}Runner</td><td>1_Login, 7_DVS</td><td><code>@Login or @DVS_IND_POS</code> / <code>_IND_NEG</code> / <code>_LE_POS</code> / <code>_LE_NEG</code></td></tr>
+<tr><td>TestDVS{Positive,Negative,Combined,Regression}Runner</td><td>1_Login, 7_DVS</td><td><code>@Login or @DVS_POS</code> / <code>_NEG</code> / <code>_COMBINED</code> / <code>_REG</code></td></tr>
+</tbody></table>
+<h3>6.2 Tags</h3>
+<table class="grid small"><thead><tr><th>Tag</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>@Positive</code>, <code>@Negative</code></td><td>Kind of test. Negative exists only for DVS and User Management.</td></tr>
+<tr><td><code>@Smoke</code></td><td>Core scenarios of a module.</td></tr>
+<tr><td><code>@Deferred</code></td><td>Written but intentionally not automated yet (Download). Excluded by default.</td></tr>
+<tr><td><code>@Login, @Dashboard, @StateMaster, @DistrictMaster, @PincodeMaster, @HierarchyMaster, @Search, @SearchInteractive, @UsersPositive, @UsersNegative, @RolesPositive, @RolesNegative, @ConcurrentSession, @Reports, @DVS_*</code></td><td>One tag per module / sub-module. The Control Panel and the runners select scenarios by these tags.</td></tr>
+</tbody></table>
+<h3>6.3 The Test Control Panel</h3>
+<p>An HTML pop-up injected into the browser page right after launch (<code>utils/panel</code> + <code>Reports/control_panel.js</code>). It works from <b>every</b> runner (pre-ticked with that runner's module) and from <code>TestControlPanelRunner</code> (everything available).</p>
+<table class="grid small"><thead><tr><th>Panel part</th><th>Behaviour and conditions</th></tr></thead><tbody>
+<tr><td>Type of testing</td><td>Positive, Negative or Both. Sub-modules with no test of that kind are greyed out; a module with nothing runnable cannot be started ("nothing would run").</td></tr>
+<tr><td>Modules</td><td>Login, Dashboard, Masters (State, District, Pincode, Hierarchy), Search And Download (configured / interactive), User Management (Users, Roles), Concurrent session, DVS 2.0 (Individual, Legal + customer id boxes), DVS workbook runs, Reports compare.</td></tr>
+<tr><td>Option groups</td><td>Reports: Application (NEW, UPDATE) and Constitution (ALL, Individual, Legal entity) with quick picks - Individual only, Legal entity only, Both, ALL only, Everything; NEW only, UPDATE only, Both.</td></tr>
+<tr><td>Run options</td><td>Open the Advanced report; open Extent and Cucumber; stop at the first failed scenario.</td></tr>
+<tr><td>Screen recording</td><td>A separate card with one toggle, <b>off by default</b>, decided before Start Test. It shows ticked when the runner class already started the recording. Un-ticking it discards that recording.</td></tr>
+<tr><td>Presets</td><td>Name a selection and save it; "Last run" is remembered. Stored in <code>Control Panel/presets.json</code>.</td></tr>
+<tr><td>Auto Login</td><td>If a module needs a session (DVS), <code>@Login</code> is added automatically.</td></tr>
+<tr><td>Stop</td><td>"Stop - do not run" ends the suite with nothing executed.</td></tr>
+<tr><td>Skipped when</td><td><code>headless=true</code>, <code>interactiveBlockerPrompt=false</code> or <code>controlPanel.onRunners=false</code>.</td></tr>
+</tbody></table>
+
+<h1 id="s7">7. Pop-ups, recovery and retries</h1>
+<h3>7.1 The decision pop-up</h3>
+<p>When a <i>mandatory</i> step cannot find an expected page, button or field, or a blocker stops the next action, the framework draws a pop-up on the page. It names exactly where the automation is, so you never have to read a stack trace:</p>
+<table class="grid small"><thead><tr><th style="width:22%">Row</th><th>Content</th></tr></thead><tbody>
+<tr><td>Feature / Scenario / Step</td><td>Where the run is.</td></tr>
+<tr><td>Expected</td><td>What the step expected to see.</td></tr>
+<tr><td>Functionality</td><td>Class and method that was running (from the failing call stack).</td></tr>
+<tr><td>Step definition / Page object</td><td>The glue method and the Page class involved.</td></tr>
+<tr><td>Element / locator</td><td>The locator that was not found, extracted from the Selenium message.</td></tr>
+<tr><td>What happened</td><td>Short error and the page currently open.</td></tr>
+</tbody></table>
+<table class="grid small"><thead><tr><th style="width:22%">Button</th><th>Effect</th></tr></thead><tbody>
+<tr><td><b>Continue / Retry</b></td><td>Fix the page by hand first (log in, open the right page, close a dialog), then click: the same step runs again right away. Up to 3 tries; each new failure asks again.</td></tr>
+<tr><td><b>Skip this case</b></td><td>The scenario is marked skipped; the next scenario of the same feature runs.</td></tr>
+<tr><td><b>Skip this feature</b></td><td>The rest of the feature file is skipped; the next feature / module chosen in the panel still runs.</td></tr>
+<tr><td><b>Stop everything</b></td><td>The whole automation ends: all remaining scenarios, features and modules are cancelled, reports so far are written, the browser closes.</td></tr>
+<tr><td>No answer in 60 s</td><td>Treated as <b>Skip this case</b>. A live countdown is shown.</td></tr>
+</tbody></table>
+<h3>7.2 When the pop-up appears</h3>
+<ul>
+<li>The step was declared <code>mandatory</code> (the last argument of <code>runStep</code>) <b>and</b> the failure looks like "element missing" (NoSuchElement, timeout, "not found") - or a server-error / foreign page is detected (HTTP 500 etc.). Optional checks never raise the pop-up; they record a soft failure.</li>
+<li>Before the pop-up the framework already tried one safe refresh and a retry of the step.</li>
+<li>A click blocked by an application dialog (SweetAlert, overlay) uses the same pop-up with the button named <b>Retry</b>. A short invisible MUI backdrop is handled silently (Escape, wait, retry once).</li>
+<li>A module that cannot create its mandatory record raises the same four answers as a <i>module blocker</i>.</li>
+</ul>
+<h3>7.3 Retries and session loss</h3>
+<ul>
+<li>Scenario retry: <code>maxScenarioRetries=1</code>, only for Login, Dashboard, Search, Masters tags.</li>
+<li>If the browser window disappears ("invalid session id") the module stops cleanly with <code>SessionLost</code>; Reports compare writes its workbook anyway and records STOPPED with the reason.</li>
+<li>Active-session dialog after login: the framework clicks "Log out other session and continue". Chrome's password / breach bubble is dismissed with Escape after login.</li>
+</ul>
+
+<h1 id="s8">8. Reports and evidence</h1>
+<table class="grid small"><thead><tr><th style="width:24%">Report</th><th>What it gives you</th></tr></thead><tbody>
+<tr><td><b>Advanced report</b> (HTML)</td><td>Whole run on one page: KPIs, donut, module bars, "Needs attention" list, filters, scenario-by-scenario and step-by-step tables with Expected / Actual, test data, screenshots (lightbox), dark / light mode, print view. Includes <i>What was tested</i> (the panel selection).</td></tr>
+<tr><td><b>Extent report</b></td><td>One test per scenario named "[Module &gt; Sub-module] scenario"; one node per step with a table and screenshot; author, categories, system info (Tested By).</td></tr>
+<tr><td><b>Cucumber JVM report</b></td><td>Feature / scenario / step overview from the JSON of the run, with classifications (Tested By, application, environment, browser, runner, run date, what was tested).</td></tr>
+<tr><td><b>Excel execution report</b></td><td>One row per step: scenario, step, expected, actual, status, test data, toast, screenshot name.</td></tr>
+<tr><td><b>Execution log</b></td><td>Timestamped TXT and HTML, failures in red. Includes the pop-up context lines ("Decision popup | Functionality: ...").</td></tr>
+<tr><td><b>Allure</b></td><td>Results copied to <code>target/allure-results</code>; open with the <code>allure</code> CLI or <code>open-allure.ps1</code>.</td></tr>
+<tr><td><b>Module workbooks</b></td><td>Reports compare (Excel + self-contained HTML + JSON files), Search results (one row per search), dashboard data (sheet per sub-card), DVS result workbook.</td></tr>
+</tbody></table>
+<h3>8.1 Screen recording, completion step and run summary</h3>
+<table class="grid small"><thead><tr><th style="width:26%">Topic</th><th>Behaviour and conditions</th></tr></thead><tbody>
+<tr><td>Switch on (priority order)</td><td>(1) the <b>Screen recording</b> toggle in the Test Control Panel; (2) the runner class constant <code>private static final boolean RECORD_SCREEN = true;</code> (default <code>false</code> in every runner): recording starts as soon as the browser is open; (3) <code>recording.enabled=true</code> in config for every runner. Default is off.</td></tr>
+<tr><td>What is recorded</td><td>The automation browser only, taken from the browser itself (Chrome DevTools screencast on a separate connection), <b>not</b> from the screen. A window or application opened on top of it does not appear in the video and does not stop it. Keep the automation window open (not minimised) and do not open other tabs inside it: a hidden tab does not paint.</td></tr>
+<tr><td>Video file</td><td><code>Report Output/Screen Recordings/&lt;date&gt;/&lt;runner&gt;_&lt;date_time&gt;.avi</code> (Motion-JPEG AVI, plays in Windows Media Player and VLC). Every frame has a <b>REC timer</b>, the date/time and the runner name in the top-right corner. Default 5 frames per second, 1280 px wide; the file is closed at about 1.9 GB.</td></tr>
+<tr><td>When it stops</td><td>After the reports are generated: a completion toast appears in the browser ("Test run completed - total time ... - screen recording saved"), the final screenshot is taken, then the recorder is closed. Stop everything and a JVM shutdown also finish the file.</td></tr>
+<tr><td>Final screenshots (every run)</td><td><code>Final_Window_&lt;time&gt;.png</code> (browser page with the toast) and, when a display exists, <code>Final_Screen_&lt;time&gt;.png</code> (whole screen). The window picture is shown in the top-right corner of the Advanced report.</td></tr>
+<tr><td>Time taken</td><td>Total time taken (whole run) and test execution time (from Start Test, panel waiting time excluded) are shown in the Advanced report (header and KPI cards), Extent system info, Cucumber classifications, Excel summary and the console.</td></tr>
+<tr><td>Console summary</td><td>At the end a <b>RUN SUMMARY</b> block lists the times and a <code>file:///</code> link for the Advanced report, Excel report, Dashboard Excel, Extent, Cucumber, execution logs, screenshots, final screenshots and the video. Ctrl+click a link in the IntelliJ console to open it. The Excel report also opens by itself (<code>openExcelReportAfterRun</code>).</td></tr>
+<tr><td>Advanced report</td><td>Views: by module (category), by scenario, by test case (steps with TC id, expected / actual, screenshots). New: total time, final screenshot corner, a "Result files" table with links.</td></tr>
+</tbody></table>
+<p>Screenshots of failures carry a red banner naming the check and, where useful, scroll the failing element into view and outline it (<code>ScreenshotFocus</code>).</p>
+
+<h1 class="pb" id="s9">9. Module guide: conditions and expected results</h1>
+<p>Each module below lists the user journey and, in a table, <b>the exact condition that makes each check pass or fail</b>.</p>
+
+<h2 id="m1">9a. Login</h2>
+<p>Feature <code>1_Login/1_Login.feature</code> - tags <code>@Login @Positive @Smoke</code>.</p>
+<ol>
+<li>Open the login page by its root URL (a direct <code>/login</code> hit returns HTTP 500 on this server).</li>
+<li>Select runtime mode API / Mock <i>only if</i> the buttons exist (the live login page no longer shows them; the step is skipped).</li>
+<li>Enter the username and password from <code>config.properties</code>; click Sign In.</li>
+<li>If the "Active session detected" dialog appears, click "Log out other session and continue".</li>
+<li>Dismiss Chrome's password / breach prompt.</li>
+</ol>
+<table class="grid small"><thead><tr><th>Check</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>Login success</td><td>Within <code>loginWait</code> the URL contains <code>dashboardUrl</code> and is not <code>/login</code>.</td></tr>
+<tr><td>Login failure</td><td>Still on the login page after the wait: "Login failed - still on login page".</td></tr>
+<tr><td>Not automated yet</td><td>Invalid credentials, locked account.</td></tr>
+</tbody></table>
+
+<h2 id="m2">9b. Dashboard</h2>
+<p>Feature <code>2_Dashboard/2_Dashboard.feature</code> - tags <code>@Dashboard @Positive @Smoke</code>.</p>
+<ol>
+<li>Resume the session and go to the dashboard through the nav bar; <b>close the side nav</b> so the cards are visible in screenshots.</li>
+<li>Discover the filters from the page (never a hard-coded list).</li>
+<li>For each filter combination: click, wait until card totals and sub-cards are consistent, read all summary cards and sub-cards.</li>
+<li>Open each sub-card's report pop-up, read its table (all headers and rows) and store it.</li>
+<li>Export the dashboard data Excel.</li>
+</ol>
+<table class="grid small"><thead><tr><th>Check</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>Sub-cards</td><td>Read live from the page (a list item with a code like <code>B5</code> and an aria-label). Never hard-code: the dashboard gained B8, B9 and G3 once and a fixed list caused a false failure.</td></tr>
+<tr><td>Formula</td><td>The summary card total equals the sum of its sub-card counts (navigation-only sub-cards included by their number).</td></tr>
+<tr><td>Pop-up count</td><td>The pop-up's "N records" badge equals the sub-card number (row count of the first page is the fallback).</td></tr>
+<tr><td>Navigation-only sub-cards</td><td>Image Scan/Upload Queue, DVS Queue, Confirm Match Audit Queue, Probable match pending in FI: the number is read and counted, the card is <b>never clicked</b>. Matched by label, not code.</td></tr>
+<tr><td>Image Availability / Image Compression queues</td><td>Open a report pop-up: full table is read.</td></tr>
+<tr><td>Stored data</td><td>Sheet per sub-card plus <code>Report_Values</code>; cells too large for Excel go to a JSON file with a clickable link.</td></tr>
+</tbody></table>
+
+<h2 id="m3">9c. Masters</h2>
+<p>Features under <code>3_Masters</code> - tags <code>@Masters @StateMaster / @DistrictMaster / @PincodeMaster / @HierarchyMaster @Positive @Smoke</code>. Only <code>TEST</code> records are created, edited or toggled.</p>
+<table class="grid small"><thead><tr><th style="width:17%">Master</th><th>Journey</th><th style="width:36%">Conditions</th></tr></thead><tbody>
+<tr><td>State</td><td>Open from Masters nav; badges; load all states (code to name); clear Create form; field rules; duplicate; create TEST state; edit, toggle, search; random search with retry.</td><td>Badges: <b>Total = Active + Inactive</b>. Code / Name: max length, allowed characters, required. Existing state cannot be duplicated.</td></tr>
+<tr><td>District</td><td>Ensure a test-safe State; load districts; duplicate; name rules; State filter for two random states; random search; create, edit, toggle, search a TEST district.</td><td>Badges Total = Active + Inactive. State filter shows only that state's districts. Duplicate rejected.</td></tr>
+<tr><td>Pincode</td><td>Ensure test State and District; load pincodes; duplicate; field rules; State filter; random search; create, edit, toggle, search a TEST pincode.</td><td>Badges: <b>Total &gt;= Active</b>. Pincode is 6 digits, numeric. Duplicate rejected.</td></tr>
+<tr><td>Hierarchy</td><td>Four scenarios, one per tab (FI, CPC, Region, Branch): open, summary chips, field validation, safe CRUD, search.</td><td>Summary chips visible; field validation per tab; TEST records only.</td></tr>
+</tbody></table>
+
+<h2 id="m4">9d. Search And Download</h2>
+<h3>Configured Search (<code>6_Search.feature</code>, <code>@Search @Positive @Smoke</code>)</h3>
+<ol>
+<li>Open Search And Download &gt; Search through the nav bar.</li>
+<li>Verify Document Type, Document Number, Search and Clear are visible; Document Number and Search are disabled until a type is chosen.</li>
+<li>PAN: select PAN; check maxLength; try blank, short, lower-case, malformed, special-character and over-length values; enter the configured PAN; Search; validate every returned field; save the identifiers for Download.</li>
+<li>Mobile: same with "Mobile Number without ISD Code"; search the configured mobile; record the outcome.</li>
+<li>Clear; verify the reset state.</li>
+</ol>
+<table class="grid small"><thead><tr><th style="width:24%">Check</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>Document type prerequisite</td><td>Number field and Search disabled before a type is chosen.</td></tr>
+<tr><td>PAN rules</td><td>maxLength 10; letters auto upper-cased; special characters stripped; more than 10 truncated; Search enabled <b>only</b> for 5 letters + 4 digits + 1 letter (<code>[A-Z]{5}[0-9]{4}[A-Z]</code>). An invalid value that enables Search is a VALIDATION DEFECT.</td></tr>
+<tr><td>Mobile rules</td><td>10 digits starting 6-9 (<code>[6-9][0-9]{9}</code>); the application's field currently allows maxLength 20: reported as APP DEFECT (expected 10).</td></tr>
+<tr><td>Waiting for the answer</td><td>After the click the framework polls every 0.5 s for a record, toast, alert or field message. Silence is called a defect only after <code>search.noResponseAfterSeconds</code> (35 s); the hard limit is <code>search.resultTimeoutSeconds</code> (90 s). The application's back end answers with "Token API Failed" after about 16 s.</td></tr>
+<tr><td>Result fields</td><td>CKYC Number (masked: <code>[X*]+[0-9]{4}</code>), CKYC Reference ID, Account Type, KYC Date, Updated Date, Full Name, Father / Spouse Full Name, Age, Mobile Number must all be non-empty (not a dash / placeholder). Names are redacted in reports.</td></tr>
+<tr><td>Response classes</td><td>Back-end text (token api, server error, timeout, status code 5xx) = <b>APP DEFECT: back end failed</b>; "success" without a result = APP DEFECT; "no record / not found" = explicit failure; nothing = DEFECT no result and no message.</td></tr>
+<tr><td>Clear</td><td>Type and number empty, Search disabled, previous result gone.</td></tr>
+<tr><td>Saved identifiers</td><td><code>Current Data/Search/latest/search-result.properties</code> (masked CKYC number, reference id, PAN or mobile) for the future Download module.</td></tr>
+</tbody></table>
+<h3>Interactive Search (<code>7_Search_Interactive.feature</code>, <code>@SearchInteractive</code>)</h3>
+<p>A pop-up in the page lists the live Document Type options; the tester picks one and types the number (PAN mask applied), with Search, Clear, Close, a Negative switch and "Run automatic negatives". Close ends the feature; Clear resets. Each search becomes one row in <code>Report Output/Search Results/&lt;date&gt;/Search_Results_&lt;time&gt;.xlsx</code> with a screenshot.</p>
+<table class="grid small"><thead><tr><th style="width:30%">Outcome</th><th>Verdict</th></tr></thead><tbody>
+<tr><td>BLOCKED BY THE FIELD (Search disabled)</td><td>PASS for an invalid value; FAIL if a valid-format value kept Search disabled.</td></tr>
+<tr><td>RECORD FOUND</td><td>PASS if all fields are populated and the CKYC number is masked; FAIL for an invalid value that returned a record (VALIDATION DEFECT).</td></tr>
+<tr><td>NO RECORD FOUND</td><td>PASS.</td></tr>
+<tr><td>ERROR MESSAGE SHOWN</td><td>PASS for invalid / negative input; FAIL for a valid-format value outside negative mode.</td></tr>
+<tr><td>BACKEND / API ERROR</td><td>FAIL (application defect, not caused by the value).</td></tr>
+<tr><td>SUCCESS WITHOUT A RESULT, NO RESPONSE, NO MEANINGFUL RESPONSE</td><td>FAIL.</td></tr>
+</tbody></table>
+<p><b>Download</b> (<code>7_Download.feature</code>) is <code>@Deferred</code>: it will consume the saved identifiers once its UI flow is reviewed.</p>
+
+<h2 id="m5">9e. User Management - Roles and Users (Maker - Checker)</h2>
+<h3>Accounts (from <code>TestData/user-management.properties</code>; passwords are in that file, never in this guide)</h3>
+<table class="grid small"><thead><tr><th>Role in the test</th><th>User</th><th>Used for</th></tr></thead><tbody>
+<tr><td>Maker</td><td><code>automaker</code></td><td>Creates and edits users and roles; lock, unlock, dormant requests. The run first signs in as the config user, then switches.</td></tr>
+<tr><td>Independent Checker</td><td><code>autochecker</code></td><td>Approves or reverts create, edit and role requests.</td></tr>
+<tr><td>Branch Checker</td><td><code>autochecker</code> (same account)</td><td>Approves lock, unlock and dormant.</td></tr>
+<tr><td>Same-role Checker (negative)</td><td><code>admin</code></td><td>Must <b>not</b> be able to approve the Maker's request (same Admin role).</td></tr>
+<tr><td>Test user created by the run</td><td><code>testauto&lt;digits&gt;</code></td><td>Login check after approval; dormant check.</td></tr>
+</tbody></table>
+<p>Keys: <code>maker.username</code>, <code>maker.password</code>, <code>checker.primary</code>, <code>checker.branch</code>, <code>checker.sameRole</code>, <code>password.default</code>, <code>password.adminFallback</code>. One browser: every Maker to Checker change is logout then login (<code>UserManagementSession.loginAs</code>, restore with <code>restoreMaker</code>). <b>Roles Positive must run before Users Positive</b>: Add User selects the approved TEST AUTO role (<code>UserManagementStore.approvedRoleName</code>, kept across scenarios; everything else is cleared at the start of each scenario).</p>
+
+<h3>Roles - Positive (<code>8_01_RolesPositive.feature</code>)</h3>
+<table class="grid small"><thead><tr><th style="width:5%">#</th><th style="width:14%">Who</th><th>Action</th><th style="width:34%">Pass condition</th></tr></thead><tbody>
+<tr><td>1</td><td>Maker</td><td>Open User Management &gt; Roles (nav bar; URL <code>/admin/roles</code> as fallback).</td><td>Role Management and Add Role visible.</td></tr>
+<tr><td>2</td><td>Maker</td><td>Add Role: name <code>TEST AUTO ROLE &lt;id&gt;</code>, code <code>TA&lt;n&gt;</code>, description; Save.</td><td>Toast has success / submitted / pending, <i>or</i> the role card is visible. Queued with no toast = <b>BUG</b>.</td></tr>
+<tr><td>3</td><td>Checker</td><td>Login, Roles, Checker mode, Pending queue, find the role (paginate).</td><td>Approve / Revert icons present for the role.</td></tr>
+<tr><td>4</td><td>Checker</td><td>View Details (role, maker, type CREATE, status PENDING); Approve; confirm.</td><td>See "Approved" rule below.</td></tr>
+<tr><td>5</td><td>Checker</td><td>Approved queue; View Details again.</td><td>Approved-by shows the checker.</td></tr>
+<tr><td>6</td><td>Maker</td><td>Configure Permissions on the TEST AUTO role only; tick a child module; save.</td><td>Parent module checkbox becomes selected.</td></tr>
+</tbody></table>
+<h3>Roles - Negative (<code>8_02</code>)</h3>
+<p>Blank Add Role: helper errors &gt; 0. Name <code>TEST@ROLE</code> / code <code>ROLE CODE</code>: helper errors &gt; 0 and nothing queued. Then a valid role is created; the Maker tries to approve it (must be blocked); <code>admin</code> tries (must be blocked).</p>
+
+<h3>Users - Positive (<code>7_01_UsersPositive.feature</code>, one scenario)</h3>
+<div class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 672" width="100%" role="img" font-family="Segoe UI, Arial, sans-serif"><defs><marker id="arulane" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><text x="145" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="#0C447C">Maker: automaker</text><text x="535" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="#085041">Checker: autochecker</text><rect x="40" y="38" width="210" height="54" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="145.0" y="57.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">Create TEST AUTO user</text><text x="145.0" y="76.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">Add User, role, Save</text><line x1="250" y1="65" x2="428" y2="65" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="430" y="38" width="210" height="54" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="535.0" y="57.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">Approve create</text><text x="535.0" y="76.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">View Details, Approve</text><path d="M535 92 L535 104 L145 104 L145 114" fill="none" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="40" y="116" width="210" height="54" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="145.0" y="135.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">New user login, search</text><text x="145.0" y="154.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">default password, row visible</text><line x1="145" y1="170" x2="145" y2="192" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="40" y="194" width="210" height="54" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="145.0" y="213.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">Edit designation</text><text x="145.0" y="232.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">QA TESTER EDIT, Save</text><line x1="250" y1="221" x2="428" y2="221" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="430" y="194" width="210" height="54" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="535.0" y="213.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">Approve edit</text><text x="535.0" y="232.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">Approve, then verify</text><path d="M535 248 L535 260 L145 260 L145 270" fill="none" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="40" y="272" width="210" height="54" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="145.0" y="291.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">Second edit</text><text x="145.0" y="310.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">QA TESTER REVERT, Save</text><line x1="250" y1="299" x2="428" y2="299" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="430" y="272" width="210" height="54" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="535.0" y="291.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">Revert edit</text><text x="535.0" y="310.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">Revert, Reverted queue</text><path d="M535 326 L535 338 L145 338 L145 348" fill="none" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="40" y="350" width="210" height="54" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="145.0" y="369.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">Lock user</text><text x="145.0" y="388.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">Lock icon, confirm</text><line x1="250" y1="377" x2="428" y2="377" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="430" y="350" width="210" height="54" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="535.0" y="369.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">Approve lock</text><text x="535.0" y="388.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">Approve, then verify</text><path d="M535 404 L535 416 L145 416 L145 426" fill="none" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="40" y="428" width="210" height="54" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="145.0" y="447.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">Unlock user</text><text x="145.0" y="466.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">Unlock icon, confirm</text><line x1="250" y1="455" x2="428" y2="455" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="430" y="428" width="210" height="54" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="535.0" y="447.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">Approve unlock</text><text x="535.0" y="466.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">Approve, then verify</text><path d="M535 482 L535 494 L145 494 L145 504" fill="none" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="40" y="506" width="210" height="54" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="145.0" y="525.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">Set dormant</text><text x="145.0" y="544.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">Edit, untick Active, Save</text><line x1="250" y1="533" x2="428" y2="533" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="430" y="506" width="210" height="54" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="535.0" y="525.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">Approve dormant</text><text x="535.0" y="544.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">Approve, then verify</text><path d="M535 560 L535 572 L145 572 L145 582" fill="none" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arulane)"/><rect x="40" y="584" width="210" height="54" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="145.0" y="603.44" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">Dormant user login</text><text x="145.0" y="622.88" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">must stay on login page</text></svg><div class="cap">Figure 3 - Users positive flow: Maker and Checker lanes.</div></div>
+<table class="grid small"><thead><tr><th style="width:5%">#</th><th style="width:14%">Who</th><th>Action</th><th style="width:34%">Pass condition</th></tr></thead><tbody>
+<tr><td>1</td><td>Maker</td><td>Open Users; Maker mode.</td><td>Maker, Checker and Add User controls visible.</td></tr>
+<tr><td>2</td><td>Maker</td><td>Create: TEST / AUTO / QA TESTER, <code>&lt;login&gt;@example.test</code>, mobile <code>98765xxxxx</code>, login <code>testauto&lt;n&gt;</code>, SOL first option, role = approved TEST AUTO role; Save.</td><td>"Queued" rule; missing toast = BUG.</td></tr>
+<tr><td>3-4</td><td>Checker</td><td>Pending queue, View Details (login, maker, CREATE, PENDING), Approve; later Approved queue View Details (login, maker, CREATE, APPROVED, approved-by).</td><td>"Approved" rule; all five details found.</td></tr>
+<tr><td>5</td><td>New user</td><td>Login with the default password.</td><td>Not on <code>/login</code>. Still on login = <b>BUG-003</b>.</td></tr>
+<tr><td>6</td><td>Maker</td><td>Search the login.</td><td>Row visible. Not approved earlier = reported as SKIP (failed row).</td></tr>
+<tr><td>7-8</td><td>Maker, Checker</td><td>Edit designation <code>QA TESTER EDIT</code>; Checker approves and verifies.</td><td>"Queued", "Approved"; type edit/update in details.</td></tr>
+<tr><td>9-10</td><td>Maker, Checker</td><td>Second edit <code>QA TESTER REVERT</code>; Checker reverts.</td><td>"Reverted" rule; Maker still sees the user row.</td></tr>
+<tr><td>11-14</td><td>Maker, Checker</td><td>Lock, approve; Unlock, approve (lock / unlock icons on the row, confirm dialog).</td><td>Queued evidence; the last pending action must equal LOCK / UNLOCK before approval, otherwise FAIL "prerequisite not created".</td></tr>
+<tr><td>15-16</td><td>Maker, Checker</td><td>Dormant: Edit, untick Active (fallback: Status = Dormant), Save; Checker approves.</td><td>Neither control found = FAIL; queued evidence.</td></tr>
+<tr><td>17</td><td>Maker</td><td>Search the user; list action icons.</td><td>Row text shows dormant / exit / inactive / locked (the check passes if the row exists).</td></tr>
+<tr><td>18</td><td>Dormant user</td><td>Login with the default password.</td><td>Must stay on <code>/login</code>. Login allowed = <b>BUG</b>.</td></tr>
+<tr><td>19</td><td>Maker</td><td>Restore Maker session.</td><td>-</td></tr>
+</tbody></table>
+<h3>Users - Negative (<code>7_02</code>)</h3>
+<table class="grid small"><thead><tr><th style="width:30%">Check</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>Mandatory fields</td><td>Save blank Add User: helper error count &gt; 0.</td></tr>
+<tr><td>Length rules</td><td>First Name 51 chars accepted &lt;= 50; Email 101 chars accepted &lt;= 100; Login Name 31 chars accepted &lt;= 30.</td></tr>
+<tr><td>Datatype rules</td><td><code>AB12@</code> name, <code>not-an-email</code>, <code>ABC123</code> mobile: helper errors &gt; 0 and no request queued.</td></tr>
+<tr><td>Duplicate login</td><td>Existing login <code>auto</code>: toast contains already / exist / duplicate, <i>or</i> helper errors &gt; 0.</td></tr>
+<tr><td>Self-approval</td><td>Maker opens the Checker queue and tries to approve own request: "Blocked" rule.</td></tr>
+<tr><td>Same-role Checker</td><td><code>admin</code> logs in, opens Pending, tries to approve: "Blocked" rule.</td></tr>
+</tbody></table>
+
+<h3>The shared decision rules</h3>
+<div class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 660" width="100%" role="img" font-family="Segoe UI, Arial, sans-serif"><defs><marker id="archk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect x="130" y="20" width="240" height="48" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="250.0" y="37.28" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">Switch to Checker</text><text x="250.0" y="54.56" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">logout, login autochecker</text><line x1="250" y1="68" x2="250" y2="86" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><rect x="130" y="88" width="240" height="48" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="250.0" y="105.28" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">Open Users, Checker mode</text><text x="250.0" y="122.56" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">side nav, status Pending</text><line x1="250" y1="136" x2="250" y2="154" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><rect x="130" y="156" width="240" height="48" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="250.0" y="173.28" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">Find the request row</text><text x="250.0" y="190.56" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">paginate up to 12 pages</text><line x1="250" y1="204" x2="250" y2="234" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><polygon points="250,236 360,270 250,304 140,270" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/><text x="250" y="262" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="600" fill="#412402">Approve icon</text><text x="250" y="279" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#854F0B">on the row?</text><line x1="250" y1="304" x2="250" y2="334" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><text x="262" y="322" text-anchor="start" font-size="11" font-weight="400" fill="#444441">yes</text><line x1="360" y1="270" x2="438" y2="270" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><text x="391" y="262" text-anchor="start" font-size="11" font-weight="400" fill="#444441">no</text><rect x="440" y="242" width="210" height="56" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="545.0" y="262.16" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">In Approved queue?</text><text x="545.0" y="282.32" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">yes = already approved</text><line x1="545" y1="298" x2="545" y2="336" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><text x="557" y="322" text-anchor="start" font-size="11" font-weight="400" fill="#444441">no</text><rect x="440" y="338" width="210" height="48" rx="7" fill="#FCEBEB" stroke="#A32D2D" stroke-width="1"/><text x="545.0" y="362.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#501313">FAIL: no pending request</text><rect x="130" y="336" width="240" height="48" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="250.0" y="353.28" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">View Details</text><text x="250.0" y="370.56" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">login, maker, type, PENDING</text><line x1="250" y1="384" x2="250" y2="404" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><rect x="130" y="406" width="240" height="48" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="250.0" y="423.28" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">Click Approve, confirm</text><text x="250.0" y="440.56" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">dismiss old toast first</text><line x1="250" y1="454" x2="250" y2="480" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><polygon points="250,482 360,516 250,550 140,516" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/><text x="250" y="508" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="600" fill="#412402">Approved</text><text x="250" y="525" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#854F0B">evidence?</text><line x1="250" y1="550" x2="250" y2="580" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><text x="262" y="568" text-anchor="start" font-size="11" font-weight="400" fill="#444441">yes</text><rect x="130" y="582" width="240" height="48" rx="7" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/><text x="250.0" y="599.28" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#173404">PASS: restore Maker</text><text x="250.0" y="616.56" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#3B6D11">reviewed by = checker</text><line x1="360" y1="516" x2="438" y2="516" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><text x="391" y="508" text-anchor="start" font-size="11" font-weight="400" fill="#444441">no</text><rect x="440" y="488" width="210" height="56" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="545.0" y="508.16" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">Try branch checker</text><text x="545.0" y="528.32" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">same steps once more</text><line x1="545" y1="544" x2="545" y2="582" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#archk)"/><text x="557" y="568" text-anchor="start" font-size="11" font-weight="400" fill="#444441">still no</text><rect x="440" y="584" width="210" height="48" rx="7" fill="#FCEBEB" stroke="#A32D2D" stroke-width="1"/><text x="545.0" y="608.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#501313">FAIL: not approved</text></svg><div class="cap">Figure 4 - How a Checker approval is decided (Users and Roles).</div></div>
+<table class="grid small"><thead><tr><th style="width:18%">Decision</th><th>Accepted when ANY of these is true</th></tr></thead><tbody>
+<tr><td><b>Approved</b></td><td>Toast contains <code>approved</code> or <code>success</code>; or neither the Approve nor the Revert icon remains on the row; or the row is in the Approved queue (status dropdown = Approved). With no Approve icon before the click: accepted only if the row is already in the Approved queue, otherwise FAIL "No pending request". The primary Checker is tried first; the branch Checker only as fallback.</td></tr>
+<tr><td><b>Queued</b> (Maker action)</td><td>Toast contains success, submitted, pending, updated, saved, lock or dormant; or the Approve / Revert icon exists for the login; or the row text says awaiting approval / pending.</td></tr>
+<tr><td><b>Reverted</b></td><td>Toast contains revert, returned or maker; or both icons are gone; or the row is in the Reverted queue.</td></tr>
+<tr><td><b>Blocked</b> (negative)</td><td>The Approve icon is not present; or the browser is sent to <code>/login</code> (reported as BUG-001: no toaster); or the toast is a rejection (self: maker / own / not allowed / cannot / self; same-role: same role / role + cannot / not allowed / checker); or the toast does not say approved / success. Fails only when an approved / success toast appears.</td></tr>
+<tr><td><b>Details verified</b></td><td>View Details text contains the login, the Maker name, the request type (create / edit-update / lock / unlock / dormant) and the status; for Approved / Reverted also the checker's name (first 4 letters accepted).</td></tr>
+<tr><td>Navigation</td><td>Nav bar: open menu, User Management, Users or Roles. Not on <code>/admin/users</code> or <code>/admin/roles</code> afterwards = direct URL. Session returned to login for a Checker = FAIL "Session returned to login".</td></tr>
+</tbody></table>
+<p class="note"><b>Known weak points of these rules</b> (agreed to review): "success" also matches "unsuccessful"; icons disappearing may be a refresh; negative checks pass when nothing happens; the same-role negative assumes <code>admin</code> and <code>automaker</code> share a role; the dormant check passes when the row merely exists; later steps still run after a failed approval; the toast is read for 3 s only. Tighten these with the exact application messages before relying on a negative result.</p>
+
+<h2 id="m6">9f. Concurrent session</h2>
+<p>Feature <code>6_ConcurrentSession</code> - tags <code>@ConcurrentSession @Smoke</code>. Never retried; always run last (it invalidates the first session).</p>
+<ol>
+<li>Logged in in browser 1; open a second browser and log in with the same credentials.</li>
+<li>The "Active session detected" dialog must appear in browser 2; capture a split-screen screenshot of both.</li>
+<li>Click "Log out other session and continue"; browser 2 must reach the dashboard; browser 1 must be invalidated.</li>
+<li>Both sessions are cleaned up.</li>
+</ol>
+
+<h2 id="m7">9g. Reports compare (Dashboard vs Reports module, Weekly)</h2>
+<p>Feature <code>8_Reports/Reports_Compare.feature</code> - tag <code>@Reports</code>. One scenario; <code>reports.apps</code> x <code>reports.constitutions</code> combinations (NEW / UPDATE x ALL / Individual / Legal entity) are all run by default; choose any subset in the panel.</p>
+<div class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 520" width="100%" role="img" font-family="Segoe UI, Arial, sans-serif"><defs><marker id="arrep" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect x="40" y="14" width="600" height="40" rx="7" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><text x="340.0" y="34.0" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#26215C">For each Application (NEW, UPDATE) x Constitution (ALL, Individual, Legal entity)</text><line x1="340" y1="54" x2="340" y2="72" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arrep)"/><rect x="40" y="74" width="600" height="70" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="340.0" y="99.2" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">1  Dashboard (Weekly only)</text><text x="340.0" y="124.4" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">set filters, read EVERY sub-card popup: headers as shown + every row, keyed by customer id</text><line x1="340" y1="144" x2="340" y2="162" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arrep)"/><rect x="40" y="164" width="600" height="70" rx="7" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><text x="340.0" y="189.2" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C">2  Reports module, one report at a time</text><text x="340.0" y="214.4" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">category -> type -> NEW/UPDATE + constitution -> Search -> read all pages</text><line x1="340" y1="234" x2="340" y2="252" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arrep)"/><rect x="40" y="254" width="600" height="70" rx="7" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/><text x="340.0" y="279.2" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#085041">3  Compare sub-card with its report</text><text x="340.0" y="304.4" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0F6E56">count first, then every shared column per customer id</text><line x1="340" y1="324" x2="340" y2="342" stroke="#5F5E5A" stroke-width="1.3" marker-end="url(#arrep)"/><rect x="40" y="344" width="140" height="52" rx="7" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/><text x="110.0" y="362.72" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#173404">PASS</text><text x="110.0" y="381.44" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#3B6D11">all match</text><rect x="190" y="344" width="140" height="52" rx="7" fill="#FCEBEB" stroke="#A32D2D" stroke-width="1"/><text x="260.0" y="362.72" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#501313">FAIL</text><text x="260.0" y="381.44" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#A32D2D">count or value differs</text><rect x="340" y="344" width="140" height="52" rx="7" fill="#FCEBEB" stroke="#A32D2D" stroke-width="1"/><text x="410.0" y="362.72" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#501313">BUG</text><text x="410.0" y="381.44" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#A32D2D">no report type listed</text><rect x="490" y="344" width="140" height="52" rx="7" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/><text x="560.0" y="362.72" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#412402">NOT EXECUTED</text><text x="560.0" y="381.44" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#854F0B">element / browser lost</text><rect x="190" y="420" width="290" height="52" rx="7" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/><text x="335.0" y="438.72" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#2C2C2A">STORED ONLY</text><text x="335.0" y="457.44" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#5F5E5A">report with no dashboard sub-card (Others)</text><text x="340" y="500" text-anchor="middle" font-size="11" font-weight="400" fill="#444441">Workbook is written after every combination, also when the run stops early.</text></svg><div class="cap">Figure 5 - Reports compare.</div></div>
+<table class="grid small"><thead><tr><th style="width:24%">Status</th><th>Condition</th></tr></thead><tbody>
+<tr><td><b>PASS</b></td><td>Counts are equal and every shared column matches for every customer id.</td></tr>
+<tr><td><b>FAIL</b></td><td>Counts differ, a customer id is on one side only, a value differs, or a column exists on one side only (<code>reports.columnMismatchIsFail=true</code>; false = noted in COLUMN_DIFFS only).</td></tr>
+<tr><td><b>BUG</b></td><td>A dashboard sub-card has <b>no report type under its category</b> in the Reports module list (for example G2 "Reverse Update to CBS Failed"). Nothing is compared; two screenshots (the sub-card and the open list) are attached. Counted separately from FAIL; the scenario fails.</td></tr>
+<tr><td><b>NOT EXECUTED</b></td><td>An element was missing, the Reports module showed no record count, or the browser was lost. The actual result names the element or reason.</td></tr>
+<tr><td><b>STORED ONLY</b></td><td>A Reports-module report that has no dashboard sub-card. All "Others" reports (Role Permission Matrix, OverAll, TAT, audit trails ...) are stored, never a bug.</td></tr>
+</tbody></table>
+<ul>
+<li><b>Order:</b> Dashboard first (Weekly only, set app type and constitution), then the Reports module, then compare.</li>
+<li><b>Reading the Reports module like a user:</b> choose category, choose type, set NEW / UPDATE and constitution (aria-pressed toggles), keep the default weekly date range, click "Run &lt;type&gt;", read every page (rows per page, "Go to next page"). Others have no filters and are read once.</li>
+<li><b>Matching:</b> by report type name (the pop-up shows its type); dashboard codes (F1 ...) do not exist in the Reports module.</li>
+<li><b>Comparison:</b> headers are dynamic; the key is the customer id column found by header name; S.NO and row order are ignored; counts first, then every remaining column.</li>
+<li><b>Navigation-only sub-cards</b> (Image Scan/Upload Queue, DVS Queue, Confirm Match Audit Queue, Probable match pending in FI): the sub-card number is compared with the report's record count; never clicked.</li>
+<li><b>Output:</b> workbook (SUMMARY, COMPARE, DIFFS, COLUMN_DIFFS, TABLES, BY_CUSTOMER, ALL_VALUES, sheet per table), a self-contained HTML (matrix of sub-card x six filters, filters, expected vs actual, evidence, JSON links) and a <code>json/</code> folder for cells too big for Excel. The workbook is checkpointed after every combination.</li>
+<li><b>Last complete run:</b> 183 comparisons, 168 PASS, 6 FAIL (all G2, now BUG), 9 STORED ONLY, no column differences.</li>
+</ul>
+
+<h2 id="m8">9h. DVS 2.0 and Image Upload (parked)</h2>
+<p>Code, locators and data are complete as a first version, but live tuning is <b>paused until DVS 2.0 and Image Upload are frozen</b>. Nothing is to be deleted. Resume with <code>Claude Handoff/DVS2.0/DVS_Automation_Flows_And_Resume_Notes.md</code> (flows, locators, checklist). Summary of the design so the next engineer can continue:</p>
+<table class="grid small"><thead><tr><th style="width:26%">Topic</th><th>Condition / rule</th></tr></thead><tbody>
+<tr><td>Navigation</td><td>Login first; side nav <b>DVS 2.0</b> (<code>div#tour-nav-dvs-2.0</code>) to <code>/dvs-2</code>; role Maker; DVS Individual or Legal Entity; Queue tab; search customer id; open the configured customer (<code>dvs.cust.*</code>), never the id in a workbook row.</td></tr>
+<tr><td>Save vs Submit</td><td>Save is a temporary save only. The real validation answer comes from <b>Submit to Checker</b>: toast "Please fix N field(s)", dialog "N Validation Errors Found" grouped by section, badge counts on tabs, inline "&lt;Field&gt; is required".</td></tr>
+<tr><td>Suite row flow</td><td>Set value, blur, Save, re-enter if Save dropped it, Submit, read result, screenshot, close dialog, <b>restore and verify the record after every row</b>; stop the module if restore cannot be verified.</td></tr>
+<tr><td>Safe test record</td><td>IN05100004 always carries standing validation errors, so Submit is always blocked there.</td></tr>
+<tr><td>Runners</td><td>Individual / Legal x Positive / Negative (separate runners and features), plus workbook-driven Positive, Negative, Combined, Regression.</td></tr>
+<tr><td>Not built</td><td>Image panel checks (84 rows), DB validation, full checker flow tuning, Image Upload module.</td></tr>
+</tbody></table>
+
+<h1 id="s10">10. Adding a new module: checklist</h1>
+<ol>
+<li><b>Find it through the nav bar</b>; add a nav locator in <code>pages/SideNavPage</code> (module and sub-module builders already exist). Use the URL only as a fallback.</li>
+<li><b>Page class</b> <code>pages/&lt;module&gt;/&lt;Name&gt;Page.java</code>: locators only. Verify each against the live page (aria-label, role, data-testid, visible text).</li>
+<li><b>Functionality class</b> <code>functionality/&lt;module&gt;/...</code>: the journey and every check through <code>StepLog.check</code>. Use <code>MasterUiHelper</code> and <code>ToastHandler</code>; explicit waits only. Create only <code>TEST</code> data and restore anything you change.</li>
+<li><b>Step definitions</b> <code>stepdefinitions/&lt;module&gt;/...</code>: wrap each action in <code>Hooks.runStep(description, expected, action, captureOnSuccess, mandatory)</code>. Make a step <i>mandatory</i> only if its failure means the rest of the scenario cannot run.</li>
+<li><b>Feature</b> under <code>Features/&lt;n&gt;_&lt;Module&gt;/</code> with a Background <i>user is logged in and on CKYC dashboard</i> and tags: module tag, <code>@Positive</code> / <code>@Negative</code>, <code>@Smoke</code>. Use <code>@Deferred</code> for work not ready.</li>
+<li><b>Runner</b> <code>TestRunner/Test&lt;Module&gt;Runner.java</code> extending <code>CkycCucumberTests</code>; call <code>RunnerSuiteSupport.beforeSuite/afterSuite</code> like the others; own JSON file name in <code>target/cucumber</code>.</li>
+<li><b>Control Panel</b>: add one entry to <code>ControlPanelRegistry</code> (key, title, sub-modules with positive / negative tag, option groups, text boxes) and the tag to <code>ExecutionOrder.TAG_ORDER</code> at the right place.</li>
+<li><b>Config</b>: new keys go through <code>ConfigReader</code> with a default and a commented line in <code>config.properties.example</code>.</li>
+<li><b>Report</b>: nothing extra is needed - <code>StepLog.check</code> and the hooks feed every report. Add a module workbook only if the data is large.</li>
+<li><b>Prove it</b>: compile, dry-run Cucumber with the tag (<code>cucumber.execution.dry-run</code> via a runner), then one live run; update this guide's module section.</li>
+</ol>
+
+<h1 id="s11">11. Coding conventions</h1>
+<ul>
+<li>File header on every Java file: <i>CKYC 4.0 Automation Framework - Author: Aravindhan - Created and developed by Aravindhan</i>. Package root <code>Com.Ckyc_4_0</code>.</li>
+<li>Match the surrounding code: tabs, naming, comment density. Comments explain <i>why</i>, not what.</li>
+<li>One responsibility per layer (section 3). A Page class never calls the driver; a step definition never contains a condition.</li>
+<li>No <code>Thread.sleep</code> for synchronisation except in <code>MasterUiHelper.sleep</code> for very short MUI settle times; prefer explicit waits. Implicit wait stays 0.</li>
+<li>Never swallow an exception silently in a check. If a failure is expected and handled, log why.</li>
+<li>Check messages follow the pattern: scenario ("Module | check"), step, expected, actual (with key values), passed, test data.</li>
+<li>Locators: aria-label, role, data-testid, stable visible text. Avoid index-based and class-hash xpaths. Dropdown options are selected by visible text prefix.</li>
+<li>Do not hard-code data that the page can tell you (dashboard sub-cards, report types, document types).</li>
+<li>Test data lives in <code>TestData/</code> (properties, CSV, Excel) and is documented next to the file.</li>
+<li>Generated and secret files are not committed: <code>config.properties</code> credentials, <code>Report Output</code>, <code>target</code>, <code>logs</code>.</li>
+<li>Verifying without Maven: compile the changed files with <code>javac</code> against the Maven repository jars, then dry-run Cucumber for tag and feature selection before a live run.</li>
+</ul>
+
+<h1 class="pb" id="s12">12. Troubleshooting</h1>
+<table class="grid small"><thead><tr><th style="width:30%">Symptom</th><th>Cause and action</th></tr></thead><tbody>
+<tr><td>Application says it is already open in another tab</td><td>The one-tab rule. The framework closes other iFlowCKYC tabs before launch; if a tab could not be closed (log line "tab(s) could not be closed automatically"), close it by hand. Report tabs are not touched.</td></tr>
+<tr><td>Recording file missing or very short</td><td>The recorder gets frames from the browser; check the log lines "Screen recording started / connected / saved". It needs the automation Chrome to be open and not minimised. A killed JVM (not the IntelliJ Stop button) cannot close the file.</td></tr>
+<tr><td>Test Control Panel does not appear</td><td><code>headless=true</code>, <code>interactiveBlockerPrompt=false</code> or <code>controlPanel.onRunners=false</code>.</td></tr>
+<tr><td>Decision pop-up "Expected page / button / field not available"</td><td>Read the table: it names the step, Functionality, Page and locator. Fix the page by hand and press Continue, or Skip / Stop. If it appears at the first step of a feature, check the "already logged in" state.</td></tr>
+<tr><td>Browser closes mid-run ("invalid session id")</td><td>Session lost. The module stops cleanly, reports are still written (Reports compare notes STOPPED). Re-run the module; do not interact with the window during a run.</td></tr>
+<tr><td>Direct <code>/login</code> gives HTTP 500</td><td>Server behaviour. Keep <code>openLoginDirect=false</code>; the root URL is used.</td></tr>
+<tr><td>Search shows "Token API Failed"</td><td>Application back-end defect (about 16 s after the click). It is classified as BACKEND / API ERROR (FAIL) and is not caused by the value searched or by the test.</td></tr>
+<tr><td>Cucumber report "path is unknown"</td><td>The run stopped before the JSON was complete. Normal after Stop everything.</td></tr>
+<tr><td>Allure does not open</td><td>The <code>allure</code> CLI is not installed. Run <code>open-allure.ps1</code> or <code>mvn allure:serve</code>.</td></tr>
+<tr><td>User Management fails at the first approval</td><td>Check the three Checker accounts are active with the right roles; check <code>maker.password</code> if the Maker login fails; confirm Roles Positive ran first.</td></tr>
+<tr><td>Dashboard formula FAIL</td><td>Sub-card list drift or lagging card totals. The code reads sub-cards live and waits for consistency; compare the screenshot with the stored popup tables.</td></tr>
+<tr><td>Reports compare reports BUG for a sub-card</td><td>The sub-card has no report type in the Reports dropdown. It is an application finding, not an automation error.</td></tr>
+<tr><td>Scenarios run in an unexpected order</td><td>Order applies only when the panel was used (<code>ExecutionOrder</code>). Without the panel Cucumber uses folder-name order.</td></tr>
+<tr><td>Compile error after pulling</td><td>JDK must be 21. Re-import Maven. All runners extend <code>CkycCucumberTests</code>.</td></tr>
+</tbody></table>
+
+<h1 id="s13">13. Known application behaviours and open items</h1>
+<h3>13.1 Behaviours of the application the tests depend on</h3>
+<ul>
+<li>Only one tab / one session per user; "Continue in this tab" does not help (the other tab reclaims it).</li>
+<li>Developer-tools based drivers are blocked in the in-app browser ("Developer tools are not permitted"); the Selenium Chrome run is the test of record.</li>
+<li>DVS: Save is temporary; "No Record Loaded" appears after Save / Submit, so every reopen must search the customer again; dates are dd/mm/yyyy; inputs have maxlength.</li>
+<li>Reports page: 8 categories, 37 report types; NEW / UPDATE and ALL / Individual / Legal entity toggles; default weekly date range (today minus 6 to today); zero results show one row "No records found matching the selected filters."</li>
+<li>Search takes about 16 s and currently returns "Token API Failed" for valid-format values in this environment.</li>
+</ul>
+<h3>13.2 Findings reported so far</h3>
+<table class="grid small"><thead><tr><th>Finding</th><th>Where</th></tr></thead><tbody>
+<tr><td>Dashboard sub-card G2 "Reverse Update to CBS Failed" has no report type in the Reports module</td><td>Reports compare: BUG</td></tr>
+<tr><td>Mobile Document Number field allows 20 characters (expected 10); invalid values enable Search in some trials</td><td>Search</td></tr>
+<tr><td>"Token API Failed" after about 16 s for valid PAN / mobile</td><td>Search</td></tr>
+<tr><td>Self-approve may redirect to login with no toaster (BUG-001); new user cannot log in with the default password (BUG-003); dormant user able to log in (BUG)</td><td>User Management</td></tr>
+</tbody></table>
+<h3>13.3 Open items</h3>
+<ul>
+<li>User Management: replace loose word matching with the exact application messages; stop the scenario at the first failed approval; confirm roles of the Maker and the same-role Checker.</li>
+<li>Login: invalid-credential and locked-account scenarios.</li>
+<li>Dashboard with a restricted role.</li>
+<li>Download module (deferred); Image Upload module and DVS 2.0 (parked until frozen).</li>
+<li>Next modules from the navigation bar not yet automated: Customer Status, Audit, Customer Information, Bulk Data Import, CERSAI / CKYC Process, AI Extraction, Settings, Proof Master.</li>
+<li>The Test Control Panel and the decision pop-up are verified offline; run them live and report any finding.</li>
+</ul>
+
+<h1 id="s14">14. Glossary and file map</h1>
+<table class="grid small"><thead><tr><th style="width:24%">Term</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>Maker / Checker</td><td>The user who submits a request / the user who approves or reverts it. A Checker must have a different role from the Maker.</td></tr>
+<tr><td>Branch Checker</td><td>Checker used for lock, unlock and dormant requests.</td></tr>
+<tr><td>TEST AUTO</td><td>Prefix of every record the suite creates.</td></tr>
+<tr><td>Soft assertion</td><td>A failed check that is recorded while the scenario continues.</td></tr>
+<tr><td>Mandatory step</td><td>A step whose failure triggers the decision pop-up.</td></tr>
+<tr><td>Navigation-only sub-card</td><td>A dashboard card that opens another page instead of a report pop-up; its count is read but it is never clicked.</td></tr>
+<tr><td>Combo</td><td>One Application x Constitution pair in Reports compare, for example NEW / Individual.</td></tr>
+<tr><td>Panel</td><td>The Test Control Panel pop-up.</td></tr>
+<tr><td>Funnel</td><td>The single method every step (<code>Hooks.runStep</code>) or check (<code>StepLog.check</code>) goes through.</td></tr>
+</tbody></table>
+<h3>Important files</h3>
+<table class="grid small"><thead><tr><th style="width:44%">File</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>src/test/resources/config.properties</code> / <code>.example</code></td><td>Settings / documented list of all keys.</td></tr>
+<tr><td><code>src/test/resources/TestData/user-management.properties</code></td><td>Maker / Checker accounts.</td></tr>
+<tr><td><code>src/test/resources/TestData/CKYC_Module_Flows_And_Roles.txt</code></td><td>Earlier flow and coverage notes per module.</td></tr>
+<tr><td><code>Claude Handoff/UserManagement_Flow_Understanding.md</code></td><td>User Management flow with all conditions and review points.</td></tr>
+<tr><td><code>Claude Handoff/DVS2.0/DVS_Automation_Flows_And_Resume_Notes.md</code></td><td>DVS 2.0 and Image Upload flows and the resume checklist.</td></tr>
+<tr><td><code>TestRunner/RunnerSuiteSupport.java</code>, <code>CkycCucumberTests.java</code></td><td>Suite start / end; scenario ordering.</td></tr>
+<tr><td><code>stepdefinitions/common/Hooks.java</code></td><td>Hooks and <code>runStep</code>.</td></tr>
+<tr><td><code>utils/PopupHandler.java</code>, <code>utils/FailureContext.java</code>, <code>utils/AppSession.java</code></td><td>Decision pop-up, failure description, logged-in detection.</td></tr>
+<tr><td><code>utils/panel/*</code>, <code>Reports/control_panel.js</code></td><td>Test Control Panel.</td></tr>
+<tr><td><code>UtilityFiles/AdvancedRunReport.java</code>, <code>Reports/advanced_report_template.html</code></td><td>Advanced report.</td></tr>
+<tr><td><code>functionality/reports/*</code>, <code>utils/reports/*</code>, <code>Reports/report_template.html</code></td><td>Reports compare.</td></tr>
+</tbody></table>
+<p class="foot">End of guide. Keep this document next to the code: when a module's behaviour or conditions change, update its section in the same change.</p>
+</body></html>

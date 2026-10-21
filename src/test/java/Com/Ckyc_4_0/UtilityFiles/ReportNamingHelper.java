@@ -33,8 +33,30 @@ public final class ReportNamingHelper {
 	private ReportNamingHelper() {
 	}
 
+	/** Set when the real test execution starts (after the Test Control Panel was answered); 0 = not yet. */
+	private static volatile long executionStartMillis;
+
 	public static String runTimestamp() {
 		return RUN_TIMESTAMP;
+	}
+
+	/** Call when the tests really start, so the panel waiting time is not counted as test execution time. */
+	public static void markExecutionStart() {
+		executionStartMillis = System.currentTimeMillis();
+	}
+
+	/** Time since {@link #markExecutionStart()} ("Xh Ym Zs"); the whole run when it was never marked. */
+	public static String executionElapsedFormatted() {
+		long from = executionStartMillis > 0 ? executionStartMillis : START_MILLIS;
+		return format(Math.max(0, System.currentTimeMillis() - from) / 1000);
+	}
+
+	public static String startedFormatted() {
+		return new SimpleDateFormat("dd-MMM-yyyy hh:mm:ss a", Locale.ENGLISH).format(new Date(START_MILLIS));
+	}
+
+	public static String nowFormatted() {
+		return new SimpleDateFormat("dd-MMM-yyyy hh:mm:ss a", Locale.ENGLISH).format(new Date());
 	}
 
 	public static void initializeRun(String name) {
@@ -53,7 +75,10 @@ public final class ReportNamingHelper {
 
 	/** Elapsed time since this JVM run started, formatted as "Xh Ym Zs" for the Excel Summary sheet. */
 	public static String elapsedFormatted() {
-		long totalSeconds = Math.max(0, System.currentTimeMillis() - START_MILLIS) / 1000;
+		return format(Math.max(0, System.currentTimeMillis() - START_MILLIS) / 1000);
+	}
+
+	private static String format(long totalSeconds) {
 		long hours = totalSeconds / 3600;
 		long minutes = (totalSeconds % 3600) / 60;
 		long seconds = totalSeconds % 60;

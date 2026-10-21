@@ -57,6 +57,7 @@ public final class ScreenshotManager {
 			attachToCucumber(scenario, screenshot, attachmentTitle);
 			attachToAllure(screenshot, attachmentTitle);
 			attachToExtent(attachmentTitle, screenshot, success);
+			AdvancedRunReport.get().screenshot(attachmentTitle, dest.getAbsolutePath(), success);
 
 			pauseAfterCapture();
 
@@ -80,6 +81,8 @@ public final class ScreenshotManager {
 	/** Always: brief DOM ready check, optional pause, then capture. */
 	private static void preparePageForScreenshot() throws InterruptedException {
 		BaseClass.waitForPageFullyLoaded();
+		// a FAIL picture must show the failing place: scroll it into view and outline it (no-op when nothing is set)
+		ScreenshotFocus.bringIntoView(BaseClass.getDriver());
 		int beforeMs = ConfigReader.getScreenshotDelayBeforeMs();
 		if (beforeMs > 0) {
 			Thread.sleep(beforeMs);
@@ -179,26 +182,7 @@ public final class ScreenshotManager {
 	}
 
 	private static void attachToExtent(String title, byte[] screenshot, boolean success) {
-		ExtentTest parent = ExtentReportManager.getTest();
-		if (parent == null) {
-			return;
-		}
-		ExtentTest stepNode = parent.createNode(title);
-		try {
-			String base64 = Base64.getEncoder().encodeToString(screenshot);
-			Media media = MediaEntityBuilder.createScreenCaptureFromBase64String(base64).build();
-			if (success) {
-				stepNode.pass("Screenshot captured (page fully loaded)", media);
-			} else {
-				stepNode.fail("Screenshot captured (page fully loaded)", media);
-			}
-		} catch (Exception e) {
-			logger.warn("Extent base64 screenshot attach failed for '{}': {}", title, e.getMessage());
-			if (success) {
-				stepNode.pass("Screenshot saved under Report Output/Screenshots");
-			} else {
-				stepNode.fail("Screenshot saved under Report Output/Screenshots");
-			}
-		}
+		// kept until the step it belongs to is recorded, then shown inside that step's node
+		ExtentReportManager.addMedia(title, screenshot, success);
 	}
 }

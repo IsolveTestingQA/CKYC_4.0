@@ -12,6 +12,8 @@ import Com.Ckyc_4_0.utils.dvs.DvsFindings;
 import Com.Ckyc_4_0.utils.dvs.DvsPersona;
 import Com.Ckyc_4_0.utils.dvs.DvsResultWriter;
 import Com.Ckyc_4_0.utils.dvs.DvsRow;
+import Com.Ckyc_4_0.utils.dvs.DvsScenarioLoader;
+import Com.Ckyc_4_0.utils.dvs.DvsScreenshot;
 import Com.Ckyc_4_0.utils.dvs.DvsSnapshot;
 import Com.Ckyc_4_0.utils.dvs.DvsStepLog;
 
@@ -43,7 +45,18 @@ import java.util.regex.Pattern;
  */
 public final class DvsRunEngine {
 
-	public enum Mode { POSITIVE_ONLY, NEGATIVE_ONLY, COMBINED, REGRESSION }
+	/**
+	 * POSITIVE_ONLY / NEGATIVE_ONLY / COMBINED / REGRESSION read the master workbook. IND_POSITIVE, IND_NEGATIVE,
+	 * LE_POSITIVE and LE_NEGATIVE are the structured Individual / Legal Entity suites (DVS/IND_Scenarios.csv,
+	 * DVS/LE_Scenarios.csv): enter value, Save, Submit to Checker, read the answer, restore the record.
+	 */
+	public enum Mode {
+		POSITIVE_ONLY, NEGATIVE_ONLY, COMBINED, REGRESSION, IND_POSITIVE, IND_NEGATIVE, LE_POSITIVE, LE_NEGATIVE;
+
+		boolean suite() {
+			return this == IND_POSITIVE || this == IND_NEGATIVE || this == LE_POSITIVE || this == LE_NEGATIVE;
+		}
+	}
 
 	public record Filter(Set<String> modules, Set<String> priorities, String groupGlob, String tc) {
 		public static Filter none() {
@@ -89,7 +102,7 @@ public final class DvsRunEngine {
 		LocalDateTime start = LocalDateTime.now();
 		boolean dry = DvsConfig.getBool("dvs.dryRun", false);
 		Path data = DvsConfig.testDataPath();
-		if (!Files.exists(data)) {
+		if (!mode.suite() && !Files.exists(data)) {
 			throw new IllegalStateException("DVS test data not found: " + data.toAbsolutePath());
 		}
 		DvsStepLog.startRun(mode.name());
@@ -105,14 +118,19 @@ public final class DvsRunEngine {
 				negative.addAll(load(data, NEGATIVE_SHEETS, filter));
 			}
 			case REGRESSION -> negative.addAll(load(data, REGRESSION_SHEETS, filter));
+			case IND_POSITIVE -> positive.addAll(suite("/DVS/IND_Scenarios.csv", "Individual", "POSITIVE", filter));
+			case IND_NEGATIVE -> positive.addAll(suite("/DVS/IND_Scenarios.csv", "Individual", "NEGATIVE", filter));
+			case LE_POSITIVE -> positive.addAll(suite("/DVS/LE_Scenarios.csv", "Legal Entity", "POSITIVE", filter));
+			case LE_NEGATIVE -> positive.addAll(suite("/DVS/LE_Scenarios.csv", "Legal Entity", "NEGATIVE", filter));
 		}
 		List<DvsRow> all = new ArrayList<>(positive);
 		all.addAll(negative);
 
+		info.put("Tested by", Com.Ckyc_4_0.UtilityFiles.ConfigReader.testedBy());
 		info.put("Run_ID", DvsStepLog.runId());
 		info.put("Started", start.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")));
 		info.put("Filter", filter.describe());
-		info.put("Data file", data.toAbsolutePath().toString());
+		info.put("Data file", mode.suite() ? "DVS/" + (mode.name().startsWith("LE") ? "LE" : "IND") + "_Scenarios.csv" : data.toAbsolutePath().toString());
 		info.put("Dry run", String.valueOf(dry));
 		info.put("Restore mode", DvsConfig.get("restore.mode", "GROUP_END"));
 		info.put("Checks", "data.audit=" + DvsConfig.get("data.audit", "ON") + ", tabswitch.check="
@@ -133,9 +151,14 @@ public final class DvsRunEngine {
 			}
 		} catch (DvsRowExecutor.RunAbort e) {
 			abort(e.getMessage());
-		} catch (RuntimeException e) {
-			abort("Run could not continue: " + e.getMessage());
+		} catch (RuntimeException | Error e) { // Error too: a stopped run must still write its result workbook
+			abort("Run could not continue: " + e);
 			logger.error("DVS run stopped", e);
+			try {
+				DvsScreenshot.capture("RUN", "stopped");
+			} catch (RuntimeException ignored) {
+				// screenshot is best effort
+			}
 			DvsStepLog.step("run-stopped").actual(String.valueOf(e)).result(DvsStepLog.FAIL).log();
 		}
 		blockRemaining(all, abortReason.isEmpty() ? "Not reached" : "Run stopped: " + abortReason);
@@ -156,6 +179,10 @@ public final class DvsRunEngine {
 
 	private void runModule(Mode mode, String module, List<DvsRow> pos, List<DvsRow> neg, boolean dry) {
 		if (pos.isEmpty() && neg.isEmpty()) {
+			return;
+		}
+		if (mode.suite()) {
+			runSuiteModule(module, pos, dry);
 			return;
 		}
 		List<String> candidates = customersFor(module, pos, neg);
@@ -188,8 +215,17 @@ public final class DvsRunEngine {
 		gateByPersona(neg, persona, dry);
 
 		if (!dry && DvsDataAudit.enabled()) {
-			int added = DvsDataAudit.run(module, cust);
-			info.put("Audit " + module, added + " findings (A1-A3)");
+			try {
+				int added = DvsDataAudit.run(module, cust);
+				info.put("Audit " + module, added + " findings (A1-A3)");
+			} catch (DvsRowExecutor.RunAbort e) {
+				throw e;
+			} catch (RuntimeException e) {
+				// the audit is read-only and optional: a problem here must not block every scenario
+				info.put("Audit " + module, "SKIPPED - " + e.getMessage());
+				logger.warn("Data audit skipped for {}: {}", module, e.getMessage());
+				DvsStepLog.step("data-audit").field(cust).actual("audit skipped: " + e.getMessage()).result(DvsStepLog.INFO).log();
+			}
 		}
 
 		boolean p0Failed = false;
@@ -198,9 +234,14 @@ public final class DvsRunEngine {
 			if (!row.status().isEmpty()) {
 				continue;
 			}
-			runRow(exec, row, module, cust, dry);
+			boolean ok = runRow(exec, row, module, cust, dry);
 			if (exec.customerBlocked()) {
 				blockCustomer(concat(pos, neg), exec.blockedReason());
+				return;
+			}
+			if (!ok) {
+				blockCustomer(concat(pos, neg), "Customer " + cust + " skipped after the stuck row " + row.tcId()
+						+ " could not be recovered");
 				return;
 			}
 			p0Failed |= DvsRow.FAIL.equals(row.status()) && row.priorityRank() == 0;
@@ -234,6 +275,82 @@ public final class DvsRunEngine {
 		runGroups(neg, exec, snapshot, module, cust, dry);
 	}
 
+	/**
+	 * Individual / Legal Entity suite on a LIVE record: snapshot first, one baseline Submit (existing errors), then per
+	 * row: value, Save, Submit, evidence, and the record is restored (values, Save, reload, verify) before the next row.
+	 * If a restore cannot be verified the suite stops so the record is never left changed unnoticed.
+	 */
+	private void runSuiteModule(String module, List<DvsRow> rows, boolean dry) {
+		List<String> candidates = customersFor(module, rows, List.of());
+		String prefix = "LE".equals(module) ? "LE" : "IND";
+		DvsRowExecutor exec = new DvsRowExecutor(dry, bugLocked);
+		String cust = candidates.isEmpty() ? "" : candidates.get(0);
+		DvsPersona persona = DvsPersona.UNKNOWN;
+		if (!dry) {
+			DvsNavigation.selectMaker();
+			DvsNavigation.selectModule(module);
+			try {
+				cust = DvsNavigation.openFirstAvailable(candidates);
+			} catch (RuntimeException e) {
+				String why = "No customer could be opened for " + module + ": " + e.getMessage();
+				info.put("Customer " + module, why);
+				blockCustomer(rows, why);
+				return;
+			}
+			persona = DvsPersona.detect();
+		}
+		info.put("Customer " + module, cust + " (candidates " + candidates + ")");
+		info.put("Persona " + module, persona.name());
+		exec.customer(cust);
+		DvsStepLog.context("", cust, persona.name(), DvsNavigation.currentRole());
+		DvsStepLog.step("persona").actual(persona.name()).result(DvsStepLog.INFO).log();
+		gateByPersona(rows, persona, dry);
+
+		DvsSnapshot snapshot = new DvsSnapshot();
+		if (!dry) {
+			snapshot = DvsRestoreManager.capture(prefix);
+			info.put("Snapshot " + module, snapshot.values().size() + " fields captured before the first scenario");
+			if (!exec.captureSuiteBaseline(module)) {
+				info.put("Baseline " + module, exec.blockedReason());
+				blockCustomer(rows, exec.blockedReason());
+				return;
+			}
+			exec.lastPositive(snapshot);
+		}
+		for (List<DvsRow> group : orderedGroups(rows)) {
+			for (DvsRow row : group) {
+				if (!row.status().isEmpty()) {
+					continue;
+				}
+				boolean ok = runRow(exec, row, module, cust, dry);
+				if (exec.customerBlocked()) {
+					blockCustomer(rows, exec.blockedReason());
+					return;
+				}
+				if (!ok) {
+					blockCustomer(rows, "Customer " + cust + " skipped after the stuck row " + row.tcId() + " could not be recovered");
+					return;
+				}
+				Set<String> touchedIds = exec.drainTouched();
+				if (dry || touchedIds.isEmpty()) {
+					continue;
+				}
+				DvsFieldActions.dismissDialogIfOpen();
+				if (DvsRestoreManager.mismatches(snapshot, touchedIds).isEmpty()) {
+					continue;
+				}
+				if (!DvsRestoreManager.restoreGroupEnd(snapshot, touchedIds, module, cust)) {
+					String why = "STOPPED: record " + cust + " could not be verified as restored after " + row.tcId()
+							+ " - check it by hand before running again";
+					info.put("RESTORE WARNING " + module, why);
+					blockCustomer(rows, why);
+					abort(why);
+					return;
+				}
+			}
+		}
+	}
+
 	private void runGroups(List<DvsRow> neg, DvsRowExecutor exec, DvsSnapshot snapshot, String module, String cust, boolean dry) {
 		boolean rowMode = "ROW".equalsIgnoreCase(DvsConfig.get("restore.mode", "GROUP_END"));
 		for (List<DvsRow> group : orderedGroups(neg)) {
@@ -242,9 +359,13 @@ public final class DvsRunEngine {
 				if (!row.status().isEmpty()) {
 					continue;
 				}
-				runRow(exec, row, module, cust, dry);
+				boolean ok = runRow(exec, row, module, cust, dry);
 				if (exec.customerBlocked()) {
 					blockCustomer(neg, exec.blockedReason());
+					return;
+				}
+				if (!ok) {
+					blockCustomer(neg, "Customer " + cust + " skipped after the stuck row " + row.tcId() + " could not be recovered");
 					return;
 				}
 				Set<String> t = exec.drainTouched();
@@ -262,30 +383,71 @@ public final class DvsRunEngine {
 			}
 			groupTouched.removeAll(bugLocked);
 			if (!dry && !rowMode && !groupTouched.isEmpty() && !snapshot.isEmpty()) {
-				if (!DvsRestoreManager.restoreGroupEnd(snapshot, groupTouched, module, cust)) {
-					abort("Record " + cust + " could not be restored to last positive data after group "
-							+ group.get(0).groupId() + " (irrecoverable)");
+				boolean restored = DvsRestoreManager.restoreGroupEnd(snapshot, groupTouched, module, cust);
+				int asked = 0;
+				while (!restored && asked < 2) {
+					asked++;
+					DvsStuckPrompt.Choice c = DvsStuckPrompt.ask("Record " + cust + " could not be restored to last positive data",
+							"After group " + group.get(0).groupId() + " the values still differ from the last positive snapshot.");
+					if (c == DvsStuckPrompt.Choice.STOP) {
+						abort("Stopped from the popup: " + cust + " could not be restored after group " + group.get(0).groupId());
+						return;
+					}
+					if (c == DvsStuckPrompt.Choice.SKIP) {
+						break;
+					}
+					restored = DvsRestoreManager.restoreGroupEnd(snapshot, groupTouched, module, cust);
+				}
+				if (!restored) {
+					blockCustomer(neg, "Customer " + cust + " skipped: could not be restored to last positive data after group "
+							+ group.get(0).groupId());
 					return;
 				}
 			}
 		}
 	}
 
-	/** One row: run, retry up to 2 times while the verdict is only an exception (R5), then log. */
-	private void runRow(DvsRowExecutor exec, DvsRow row, String module, String cust, boolean dry) {
+	/**
+	 * One row: run, retry up to 2 times while the verdict is only an exception (R5). If the row is still stuck
+	 * (exception or an unexpected / server page) the stuck popup is shown: Retry, Skip and continue, or Stop.
+	 * No answer within 60s = Skip. Returns false when the page could not be recovered after a skip, so the
+	 * caller skips the rest of this customer and continues with the next one.
+	 */
+	private boolean runRow(DvsRowExecutor exec, DvsRow row, String module, String cust, boolean dry) {
 		int mark = DvsStepLog.size();
 		DvsStepLog.tc(row.tcId());
 		exec.execute(row);
 		int tries = 0;
-		while (!dry && DvsRow.FAIL.equals(row.status()) && row.actual().startsWith("Exception:") && tries < 2) {
+		while (!dry && isStuck(row) && tries < 2) {
 			tries++;
 			DvsStepLog.step("retry").field(row.locatorId()).actual("attempt " + tries + "/2 after: " + row.actual())
 					.result(DvsStepLog.RETRY).log();
-			try {
-				DvsFieldActions.dismissDialogIfOpen();
-				DvsNavigation.reloadAndReopen(module, cust);
-			} catch (RuntimeException e) {
-				DvsStepLog.step("retry").actual("re-open failed: " + e.getMessage()).result(DvsStepLog.FAIL).log();
+			if (!reopen(module, cust)) {
+				break;
+			}
+			row.result("", "");
+			exec.execute(row);
+		}
+		boolean recovered = true;
+		int prompts = 0;
+		while (!dry && isStuck(row) && prompts < 3) {
+			prompts++;
+			DvsStuckPrompt.Choice c = DvsStuckPrompt.ask("Scenario " + row.tcId() + " is stuck", row.actual());
+			if (c == DvsStuckPrompt.Choice.STOP) {
+				throw new DvsRowExecutor.RunAbort("Stopped from the stuck popup at " + row.tcId(), null);
+			}
+			if (c == DvsStuckPrompt.Choice.SKIP) {
+				evidence(row, "SKIPPED");
+				row.result(DvsRow.SKIPPED, "Skipped after retries (" + (DvsStuckPrompt.enabled()
+						? "skipped by user or no answer in " + DvsStuckPrompt.seconds() + "s" : "popup disabled, auto skip")
+						+ "). Last error: " + row.actual());
+				recovered = reopen(module, cust);
+				break;
+			}
+			if (!reopen(module, cust)) {
+				recovered = false;
+				evidence(row, "SKIPPED");
+				row.result(DvsRow.SKIPPED, "Skipped: record could not be re-opened for retry. Last error: " + row.actual());
 				break;
 			}
 			row.result("", "");
@@ -293,6 +455,45 @@ public final class DvsRunEngine {
 		}
 		row.stepRange(DvsStepLog.rangeSince(mark));
 		extentLog(row, dry);
+		return recovered;
+	}
+
+	/** Screenshot of the state the row ended in, so every FAIL / SKIPPED row has a picture. Best effort. */
+	private static void evidence(DvsRow row, String tag) {
+		if (!row.screenshot().isEmpty()) {
+			return;
+		}
+		try {
+			row.screenshot(DvsScreenshot.capture(row.tcId(), tag));
+		} catch (RuntimeException ignored) {
+			// browser may be gone - the step log still has the reason
+		}
+	}
+
+	/** Stuck = failed with an exception, or failed while the browser shows an unexpected / server error page. */
+	private static boolean isStuck(DvsRow row) {
+		if (!DvsRow.FAIL.equals(row.status())) {
+			return false;
+		}
+		if (row.actual().startsWith("Exception:")) {
+			return true;
+		}
+		try {
+			return Com.Ckyc_4_0.utils.PopupHandler.isUnexpectedApplicationPage(Com.Ckyc_4_0.UtilityFiles.BaseClass.getDriver());
+		} catch (RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	private static boolean reopen(String module, String cust) {
+		try {
+			DvsFieldActions.dismissDialogIfOpen();
+			DvsNavigation.reloadAndReopen(module, cust);
+			return true;
+		} catch (RuntimeException e) {
+			DvsStepLog.step("reopen").field(cust).actual("re-open failed: " + e.getMessage()).result(DvsStepLog.FAIL).log();
+			return false;
+		}
 	}
 
 	private static void extentLog(DvsRow row, boolean dry) {
@@ -355,6 +556,22 @@ public final class DvsRunEngine {
 		}
 		groups.sort(Comparator.comparingInt((List<DvsRow> g) -> g.stream().mapToInt(DvsRow::priorityRank).min().orElse(2)));
 		return groups;
+	}
+
+	private List<DvsRow> suite(String resource, String module, String type, Filter f) {
+		Pattern glob = f.groupGlob().isEmpty() ? null
+				: Pattern.compile("^" + Pattern.quote(f.groupGlob()).replace("*", "\\E.*\\Q") + "$", Pattern.CASE_INSENSITIVE);
+		List<DvsRow> out = new ArrayList<>();
+		for (DvsRow r : DvsScenarioLoader.load(resource, module, type)) {
+			if ((!f.modules().isEmpty() && !f.modules().contains(r.moduleCode()))
+					|| (!f.priorities().isEmpty() && !f.priorities().contains(r.priority().toUpperCase(Locale.ROOT)))
+					|| (glob != null && !glob.matcher(r.groupId()).matches())
+					|| (!f.tc().isEmpty() && !f.tc().equalsIgnoreCase(r.tcId()))) {
+				continue;
+			}
+			out.add(r);
+		}
+		return out;
 	}
 
 	private List<DvsRow> load(Path data, List<String> sheets, Filter f) {

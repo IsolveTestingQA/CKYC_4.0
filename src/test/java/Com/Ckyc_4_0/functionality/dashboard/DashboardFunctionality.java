@@ -13,7 +13,12 @@ import Com.Ckyc_4_0.UtilityFiles.ConfigReader;
 import Com.Ckyc_4_0.UtilityFiles.CurrentDataManager;
 import Com.Ckyc_4_0.UtilityFiles.DashboardCountStore;
 import Com.Ckyc_4_0.UtilityFiles.DashboardDataExcelReport;
+import Com.Ckyc_4_0.functionality.reports.DashboardLive;
+import Com.Ckyc_4_0.utils.reports.ReportTable;
+import Com.Ckyc_4_0.functionality.reports.DashboardReportReader;
 import Com.Ckyc_4_0.UtilityFiles.ExtentReportManager;
+import Com.Ckyc_4_0.UtilityFiles.ScreenshotFocus;
+import Com.Ckyc_4_0.utils.MasterUiHelper;
 import Com.Ckyc_4_0.UtilityFiles.PomElementManager;
 import Com.Ckyc_4_0.UtilityFiles.SoftAssertManager;
 import Com.Ckyc_4_0.utils.DashboardFilterDiscovery;
@@ -61,7 +66,9 @@ public class DashboardFunctionality extends BaseClass {
 		waitUntilUrlContains(ConfigReader.getDashboardUrlPath(), ConfigReader.getLoginWait());
 		PomElementManager.findVisible(DashboardPage.DATE_FILTER_GROUP, waitSeconds);
 		waitForPageFullyLoaded();
-		logger.info("Dashboard loaded — URL: {}", getDriver().getCurrentUrl());
+		// Hooks opens the side nav before every scenario; it covers the cards, so close it once the dashboard is up
+		MasterUiHelper.ensureSideNavClosed(getDriver(), 5);
+		logger.info("Dashboard loaded - side nav closed - URL: {}", getDriver().getCurrentUrl());
 	}
 
 	/**
@@ -417,12 +424,33 @@ public class DashboardFunctionality extends BaseClass {
 		return summaryCounts;
 	}
 
+	/**
+	 * Sub-cards exactly as the dashboard shows them now. The static list in DashboardPage drifted (B8, B9, G3 added,
+	 * B5-B7 re-ordered), which made the card total be compared with sub-cards that were never found. Falls back to
+	 * the static list only if the page shows none.
+	 */
+	private List<DashboardPage.DashboardSubItem> liveSubItems() {
+		List<DashboardPage.DashboardSubItem> out = new ArrayList<>();
+		try {
+			for (DashboardLive.SubCard sc : DashboardLive.read(getDriver())) {
+				out.add(new DashboardPage.DashboardSubItem(sc.code(), sc.label(), sc.group()));
+			}
+		} catch (RuntimeException e) {
+			logger.warn("Could not read live sub-cards: {}", e.getMessage());
+		}
+		if (out.isEmpty()) {
+			logger.warn("No live sub-cards found - using the built-in list");
+			return DashboardPage.ALL_SUB_ITEMS;
+		}
+		return out;
+	}
+
 	public Map<String, Integer> collectAndStoreSubItemCounts() {
 		Map<String, Integer> subItemCounts = new LinkedHashMap<>();
-		for (DashboardPage.DashboardSubItem item : DashboardPage.ALL_SUB_ITEMS) {
+		for (DashboardPage.DashboardSubItem item : liveSubItems()) {
 			int count = readAndStoreSubItem(item);
 			subItemCounts.put(item.code(), count);
-			if (DashboardPage.isCountOnlyNavigationItem(item.code())) {
+			if (DashboardLive.navigationOnly(item.ariaLabel())) {
 				logCountOnlySkip(item, count);
 			} else if (count > 0) {
 				openDetailModalIfPresent(item, count);
@@ -440,21 +468,43 @@ public class DashboardFunctionality extends BaseClass {
 	}
 
 	public void verifySummaryCardFormulas(Map<String, Integer> summaryCounts, Map<String, Integer> subItemCounts) {
+		List<DashboardPage.DashboardSubItem> live = liveSubItems();
 		for (DashboardPage.SummaryCard card : DashboardPage.SUMMARY_CARDS) {
-			String[] codes = card.formulaLabel().replace("+", " ").split("\\s+");
-			String breakdown = buildSubCardBreakdown(codes, subItemCounts);
-			int subSum = sum(subItemCounts, codes);
-			verifyFormula(card.uiTitle() + " (" + card.formulaLabel() + ")", summaryCounts.get(card.key()), subSum,
-					breakdown);
+			String letter = letterOf(card.key());
+			List<String> codes = new ArrayList<>();
+			for (DashboardPage.DashboardSubItem item : live) {
+				if (item.code().startsWith(letter)) {
+					codes.add(item.code());
+				}
+			}
+			String[] codeArr = codes.toArray(new String[0]);
+			String breakdown = buildSubCardBreakdown(codeArr, subItemCounts, live);
+			int subSum = sum(subItemCounts, codeArr);
+			verifyFormula(card.uiTitle() + " (" + String.join("+", codes) + ")", summaryCounts.get(card.key()), subSum,
+					breakdown, card.totalLocator());
 		}
 	}
 
+	private static String letterOf(String cardKey) {
+		return switch (cardKey) {
+			case "DATA_PUSHED_FI" -> "A";
+			case "IFLOW_IN_PROGRESS" -> "B";
+			case "IFLOW_REJECTIONS" -> "C";
+			case "CERSAI_IN_PROGRESS" -> "D";
+			case "CERSAI_REJECTIONS" -> "E";
+			case "CERSAI_SUCCESS" -> "F";
+			case "REVERSE_UPDATE_CBS" -> "G";
+			default -> "?";
+		};
+	}
+
 	/** e.g. A1 Success=0 + A2 Failed=0 + A3 In-Progress=1134 + A4 Duplicate=0 */
-	private String buildSubCardBreakdown(String[] codes, Map<String, Integer> subItemCounts) {
+	private String buildSubCardBreakdown(String[] codes, Map<String, Integer> subItemCounts,
+			List<DashboardPage.DashboardSubItem> items) {
 		List<String> parts = new ArrayList<>();
 		for (String code : codes) {
 			String title = code;
-			for (DashboardPage.DashboardSubItem item : DashboardPage.ALL_SUB_ITEMS) {
+			for (DashboardPage.DashboardSubItem item : items) {
 				if (item.code().equalsIgnoreCase(code)) {
 					title = item.code() + " " + item.ariaLabel();
 					break;
@@ -716,6 +766,7 @@ public class DashboardFunctionality extends BaseClass {
 			PomElementManager.findVisible(DashboardPage.DETAIL_MODAL, waitSeconds);
 
 			ModalCountResult report = readModalRecordCount(dashboardCount);
+			storePopupTable(item, scenario, step);
 			boolean matched = report.count() == dashboardCount;
 			String expected = "Sub-card '" + subCardName + "' report count = dashboard count (" + dashboardCount + ")";
 			String actual = "Sub-card name: " + subCardName
@@ -726,7 +777,18 @@ public class DashboardFunctionality extends BaseClass {
 					+ " | Source: " + report.source()
 					+ " | Compare: " + (matched ? "MATCH" : "MISMATCH");
 
-			Hooks.logStepWithScenario(scenario, step, expected, actual, matched);
+			if (matched) {
+				Hooks.logStepWithScenario(scenario, step, expected, actual, true);
+			} else {
+				// the report popup is open: the screenshot must show its "N records" badge, not just the dashboard
+				ScreenshotFocus.set(DashboardPage.DETAIL_MODAL_RECORD_COUNT, DashboardPage.DETAIL_MODAL);
+				try {
+					Hooks.logStepWithScenario(scenario, step, expected, actual, false);
+				} finally {
+					ScreenshotFocus.release(getDriver());
+					ScreenshotFocus.clear();
+				}
+			}
 			ExtentReportManager.logInfo(step + " | " + actual);
 			logger.info("{} | {}", step, actual);
 
@@ -746,6 +808,34 @@ public class DashboardFunctionality extends BaseClass {
 			logger.warn("Could not open/compare report for sub-card {} {}: {}", item.code(), item.ariaLabel(), error);
 			SoftAssertManager.recordFailure(step, e);
 			ensureActiveFiltersAfterModal();
+		}
+	}
+
+	/**
+	 * Reads the open report popup completely (every row, every page, headers as shown) and stores it in the dashboard
+	 * Excel: one sheet per sub-card plus the Report_Values sheet. Rows read must equal the popup's own record count.
+	 */
+	private void storePopupTable(DashboardPage.DashboardSubItem item, String scenario, String step) {
+		try {
+			ReportTable t = new ReportTable(ReportTable.DASHBOARD, item.cardGroup(), item.ariaLabel(),
+					activeApplicationFilter == null ? "" : activeApplicationFilter, storeConstitutionKey()).code(item.code());
+			DashboardReportReader.readOpenPopup(t);
+			DashboardDataExcelReport.getInstance().addReportTable(activeDateFilter, storeConstitutionKey(),
+					activeApplicationFilter == null ? "" : activeApplicationFilter, item.code(), item.ariaLabel(),
+					t.headers(), t.rows(), "");
+			Integer declared = t.declaredCount();
+			String detail = "Stored " + t.rows().size() + " rows x " + t.headers().size() + " columns " + t.headers();
+			if (declared != null && declared != t.rows().size()) {
+				String msg = "Popup shows " + declared + " records but " + t.rows().size() + " rows were read";
+				Hooks.logStepWithScenario(scenario, step + " | popup rows read", "Rows read = popup record count",
+						msg + " | " + detail, false);
+				SoftAssertManager.recordFailure(step + " | popup rows read", new AssertionError(msg));
+			} else {
+				logger.info("{} | {}", step, detail);
+			}
+		} catch (RuntimeException e) {
+			logger.warn("Popup table not stored for {} {}: {}", item.code(), item.ariaLabel(), e.getMessage());
+			ExtentReportManager.logInfo(step + " | popup table could not be stored: " + e.getMessage());
 		}
 	}
 
@@ -940,7 +1030,7 @@ public class DashboardFunctionality extends BaseClass {
 		}
 	}
 
-	private void verifyFormula(String label, Integer cardTotal, int subItemSum, String subCardBreakdown) {
+	private void verifyFormula(String label, Integer cardTotal, int subItemSum, String subCardBreakdown, By cardTotalLocator) {
 		int total = cardTotal == null ? 0 : cardTotal;
 		String filter = activeDateFilter + "/" + storeConstitutionKey();
 		String scenario = "Formula: " + label + " | sub-cards: " + subCardBreakdown + " | filter=" + filter;
@@ -954,7 +1044,14 @@ public class DashboardFunctionality extends BaseClass {
 							+ " [" + subCardBreakdown + "]");
 			Hooks.logStepWithScenario(scenario, step, expected, actual, true);
 		} catch (AssertionError e) {
-			Hooks.logStepWithScenario(scenario, step, expected, actual, false);
+			// the screenshot must show the card whose total does not match its sub-cards
+			ScreenshotFocus.set(cardTotalLocator);
+			try {
+				Hooks.logStepWithScenario(scenario, step, expected, actual, false);
+			} finally {
+				ScreenshotFocus.release(getDriver());
+				ScreenshotFocus.clear();
+			}
 			throw e;
 		}
 	}
@@ -994,7 +1091,7 @@ public class DashboardFunctionality extends BaseClass {
 			try {
 				int card = PomElementManager.getCountValue(DashboardPage.DATA_PUSHED_FI_TOTAL, waitSeconds);
 				int sum = 0;
-				for (DashboardPage.DashboardSubItem item : DashboardPage.ALL_SUB_ITEMS) {
+				for (DashboardPage.DashboardSubItem item : liveSubItems()) {
 					if (item.code().startsWith("A")) {
 						sum += PomElementManager.getCountValue(
 								DashboardPage.subItemCount(item.code(), item.ariaLabel()), waitSeconds);

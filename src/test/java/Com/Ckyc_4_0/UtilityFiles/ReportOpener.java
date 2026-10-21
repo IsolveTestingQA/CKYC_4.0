@@ -38,8 +38,22 @@ public final class ReportOpener {
 	}
 
 	public static void openReportsIfConfigured() {
+		// advanced end-of-run report (all modules) first, then Extent and Cucumber
+		if (ConfigReader.openAdvancedReportAfterRun()) {
+			openFile(AdvancedRunReport.get().writtenTo(), "Advanced");
+		}
 		if (ConfigReader.openExtentReportAfterRun()) {
 			openFile(ExtentReportManager.getCurrentReportPath(), "Extent");
+		}
+		if (ConfigReader.openCucumberReportAfterRun()) {
+			openFile(CucumberReport.lastIndex(), "Cucumber");
+		}
+		if (ConfigReader.openExcelReportAfterRun()) {
+			try {
+				openFile(ExcelReport.getInstance().getExcelPath(), "Excel");
+			} catch (RuntimeException e) {
+				logger.warn("Excel report could not be opened: {}", e.getMessage());
+			}
 		}
 		if (ConfigReader.openAllureReportAfterRun()) {
 			openAllureReport();

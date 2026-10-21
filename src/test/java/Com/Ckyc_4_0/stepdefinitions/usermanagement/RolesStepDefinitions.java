@@ -50,9 +50,9 @@ public class RolesStepDefinitions {
 				roles::sameRoleCheckerCannotApproveRole, true, false);
 	}
 
-	@And("independent Checker shyam approves the TEST AUTO role request")
+	@And("independent Checker approves the TEST AUTO role request")
 	public void independentApproval() {
-		Hooks.runStep("Independent Checker shyam approves TEST AUTO role",
+		Hooks.runStep("Independent Checker approves TEST AUTO role",
 				"Different-role Checker approves successfully",
 				roles::independentCheckerApprovesRole, true, false);
 	}
@@ -62,6 +62,27 @@ public class RolesStepDefinitions {
 		Hooks.runStep("Evaluate parent child permission rule on TEST AUTO role",
 				"Never modify Super Admin; parent checks with child",
 				roles::inspectPermissionParentChildRule, true, false);
+	}
+
+	@And("user enables a module permission on the TEST AUTO role")
+	public void enablePermission() {
+		Hooks.runStep("Enable a module permission on TEST AUTO role",
+				"Module checkbox ticked and permission change submitted to Checker",
+				roles::enablePermissionOnRole, true, false);
+	}
+
+	@And("independent Checker approves the TEST AUTO role permission request")
+	public void approvePermission() {
+		Hooks.runStep("Independent Checker approves TEST AUTO role permission",
+				"Different-role Checker approves the permission change",
+				roles::independentCheckerApprovesPermissionRequest, true, false);
+	}
+
+	@And("the approved permission is saved on the TEST AUTO role")
+	public void permissionSaved() {
+		Hooks.runStep("Verify approved permission is saved on TEST AUTO role",
+				"Enabled module is ticked after Checker approval",
+				roles::verifyPermissionSaved, true, false);
 	}
 
 	@And("maker session is restored on Roles")

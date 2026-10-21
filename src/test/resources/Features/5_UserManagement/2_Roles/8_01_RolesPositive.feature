@@ -4,7 +4,7 @@
 @UserManagement @Roles @RolesPositive @Positive
 Feature: User Management - Roles Maker Checker (Positive)
   Accounts come from TestData/user-management.properties so they can be updated without rewriting steps.
-  Maker = config username (auto). Independent Checker = shyam. Super Admin is never opened or edited.
+  Maker and Checker come from TestData/user-management.properties (automaker / autochecker). Super Admin is never opened or edited.
   Runs before Users Positive so the approved TEST AUTO role can be selected on Add User.
 
   Background:
@@ -15,6 +15,9 @@ Feature: User Management - Roles Maker Checker (Positive)
     When user opens User Management Roles
     Then Roles Maker controls should be displayed
     And user submits a unique TEST AUTO role request
-    And independent Checker shyam approves the TEST AUTO role request
+    And independent Checker approves the TEST AUTO role request
     And permissions are evaluated only for a TEST AUTO role
+    And user enables a module permission on the TEST AUTO role
+    And independent Checker approves the TEST AUTO role permission request
+    And the approved permission is saved on the TEST AUTO role
     And maker session is restored on Roles

@@ -1,0 +1,43 @@
+/**
+ * CKYC 4.0 Automation Framework
+ * Author : Aravindhan
+ * Created and developed by Aravindhan
+ */
+package Com.Ckyc_4_0.TestRunner;
+
+import io.cucumber.testng.AbstractTestNGCucumberTests;
+import io.cucumber.testng.CucumberOptions;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeSuite;
+
+/**
+ * Login module only.
+ */
+@CucumberOptions(
+		features = { "src/test/resources/Features/1_Login" },
+		glue = { "Com.Ckyc_4_0.stepdefinitions" },
+		plugin = {
+				"pretty",
+				"json:target/cucumber/cucumber-login.json",
+				"html:target/cucumber-reports/login/index.html",
+				"io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"
+		},
+		tags = "@Login",
+		monochrome = true,
+		dryRun = false,
+		publish = false)
+public class TestLoginRunner extends CkycCucumberTests {
+
+	/** true = record the browser window of THIS runner from the moment it opens (default off; the Test Control Panel toggle overrides). */
+	private static final boolean RECORD_SCREEN = false;
+
+	@BeforeSuite(alwaysRun = true)
+	public void setUpSuite() {
+		RunnerSuiteSupport.beforeSuite("TestLoginRunner", "Login", RECORD_SCREEN);
+	}
+
+	@AfterSuite(alwaysRun = true)
+	public void tearDownSuite() {
+		RunnerSuiteSupport.afterSuite("TestLoginRunner");
+	}
+}

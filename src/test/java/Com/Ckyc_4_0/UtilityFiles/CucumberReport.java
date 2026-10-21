@@ -23,18 +23,46 @@ public final class CucumberReport {
 	private CucumberReport() {
 	}
 
+	private static volatile String lastIndex = "";
+
+	/** The Cucumber HTML report's start page of the last generated report ("" when none was generated). */
+	public static String lastIndex() {
+		return lastIndex;
+	}
+
+	/**
+	 * The runner's own JSON when the name is known, otherwise the newest Cucumber JSON of this run - so every
+	 * runner (Login, Dashboard, Reports, Search, DVS ...) gets its Cucumber HTML report, not only four of them.
+	 */
+	private static File pickJson(String runnerName) {
+		String n = runnerName == null ? "" : runnerName.toLowerCase();
+		String known = n.contains("searchanddownload") ? "cucumber-search-download.json"
+				: n.contains("searchinteractive") ? "cucumber-searchinteractive.json"
+				: n.contains("search") ? "cucumber-search.json"
+				: n.contains("masters") ? "cucumber-masters.json"
+				: n.contains("dashboard") ? "cucumber-dashboard.json"
+				: n.contains("controlpanel") ? "cucumber-controlpanel.json"
+				: n.contains("reports") ? "cucumber-reports.json"
+				: n.contains("login") ? "cucumber-login.json" : "cucumber.json";
+		File dir = new File("target/cucumber");
+		File exact = new File(dir, known);
+		if (exact.exists() && exact.length() > 0L) {
+			return exact;
+		}
+		File[] all = dir.listFiles((d, name) -> name.endsWith(".json"));
+		File newest = null;
+		if (all != null) {
+			for (File f : all) {
+				if (f.length() > 0L && (newest == null || f.lastModified() > newest.lastModified())) {
+					newest = f;
+				}
+			}
+		}
+		return newest != null ? newest : exact;
+	}
+
 	public static void generateJVMReports(String runnerName) {
-		String normalizedRunner = runnerName == null ? "" : runnerName.toLowerCase();
-		String suffix = normalizedRunner.contains("searchanddownload")
-				? "cucumber-search-download.json"
-				: normalizedRunner.contains("search")
-						? "cucumber-search.json"
-				: normalizedRunner.contains("masters")
-				? "cucumber-masters.json"
-				: normalizedRunner.contains("dashboard")
-						? "cucumber-dashboard.json"
-						: "cucumber.json";
-		File jsonReport = new File("target/cucumber", suffix);
+		File jsonReport = pickJson(runnerName);
 		if (!jsonReport.exists() || jsonReport.length() == 0L) {
 			logger.warn("Cucumber JSON report not found at {}. Skipping JVM report generation.", jsonReport.getAbsolutePath());
 			return;
@@ -53,15 +81,25 @@ public final class CucumberReport {
 		} catch (Exception e) {
 			logger.warn("Could not archive Cucumber JSON into Report Output: {}", e.getMessage());
 		}
-		Configuration configuration = new Configuration(reportOutputDir, "CKYC 4.0");
+		Configuration configuration = new Configuration(reportOutputDir, "iFlowCKYC 4.0 - Automation");
 		configuration.addPresentationModes(net.masterthought.cucumber.presentation.PresentationMode.EXPAND_ALL_STEPS);
-		configuration.setBuildNumber("1.0-SNAPSHOT");
+		configuration.setBuildNumber(ReportNamingHelper.runTimestamp());
+		configuration.addClassifications("Tested By", ConfigReader.testedBy());
+		configuration.addClassifications("Application", "iFlowCKYC 4.0.0");
+		configuration.addClassifications("Environment", ConfigReader.getUrl());
+		configuration.addClassifications("Browser", ConfigReader.get("browser", "chrome"));
+		configuration.addClassifications("Runner", runnerName == null ? "" : runnerName);
+		configuration.addClassifications("What was tested", AdvancedRunReport.selectionText());
+		configuration.addClassifications("Run date", ReportNamingHelper.runDate());
+		configuration.addClassifications("Total time taken", ReportNamingHelper.elapsedFormatted());
 
 		List<String> jsonFiles = new ArrayList<>();
 		jsonFiles.add(jsonReport.getAbsolutePath());
 
 		ReportBuilder reportBuilder = new ReportBuilder(jsonFiles, configuration);
 		reportBuilder.generateReports();
-		logger.info("Cucumber JVM report generated at {}", reportOutputDir.getAbsolutePath());
+		File index = new File(reportOutputDir, "cucumber-html-reports" + File.separator + "overview-features.html");
+		lastIndex = index.exists() ? index.getAbsolutePath() : "";
+		logger.info("Cucumber JVM report generated at {} (open: {})", reportOutputDir.getAbsolutePath(), lastIndex);
 	}
 }

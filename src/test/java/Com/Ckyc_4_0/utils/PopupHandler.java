@@ -313,16 +313,31 @@ public final class PopupHandler {
 	private static BlockerChoice resolveBlockerWithUserOrAuto(WebDriver driver, String title, String detail) {
 		if (shouldShowInteractivePrompt(driver)) {
 			BlockerChoice choice = showInteractiveBlockerPrompt(driver, title, detail);
-			if (choice == BlockerChoice.STOP) {
-				removeInteractivePrompt(driver);
-				throw new AbortRunException("Stopped by user: " + title + " — " + detail);
-			}
 			removeInteractivePrompt(driver);
+			if (choice == BlockerChoice.STOP) {
+				throw new AbortRunException("Stopped by user: " + title + " - " + detail);
+			}
+			if (choice == BlockerChoice.SKIP_SCENARIO) {
+				String reason = "Skipped (popup): " + title + " - " + detail;
+				SoftAssertManager.markSkipScenario(reason);
+				throw new org.testng.SkipException("Scenario skipped (popup): " + reason);
+			}
+			if (choice == BlockerChoice.SKIP_FEATURE) {
+				String reason = "Feature skipped (popup): " + title + " - " + detail;
+				SoftAssertManager.markSkipFeature(FailureContext.currentFeature(), reason);
+				throw new org.testng.SkipException(reason);
+			}
 			handleBlockerIfPresent(driver, FrameworkConstants.BLOCKER_WAIT_SECONDS);
 			return choice == BlockerChoice.NONE ? BlockerChoice.RETRY : choice;
 		}
 		handleBlockerIfPresent(driver, FrameworkConstants.BLOCKER_WAIT_SECONDS);
 		return BlockerChoice.RETRY;
+	}
+
+	/** Every manual popup waits at most 60 seconds; no answer = skip the scenario and continue. */
+	private static int popupWaitSeconds() {
+		int configured = ConfigReader.getInteractiveBlockerWaitSeconds();
+		return configured <= 0 ? 60 : Math.min(configured, 60);
 	}
 
 	private static boolean shouldShowInteractivePrompt(WebDriver driver) {
@@ -337,75 +352,32 @@ public final class PopupHandler {
 	}
 
 	/**
-	 * Injects a SweetAlert-style warning on the page with Stop and Retry. Waits for your click.
+	 * Decision popup for "the next action cannot continue" (app dialog / click intercepted). Four answers, each explained
+	 * on the popup: Retry, Skip this case, Skip this feature, Stop everything.
 	 */
 	public static BlockerChoice showInteractiveBlockerPrompt(WebDriver driver, String title, String detail) {
 		if (driver == null) {
 			return BlockerChoice.NONE;
 		}
-		String safeTitle = escapeJs(title == null ? "Blocker detected" : title);
-		String safeDetail = escapeJs(detail == null ? "" : detail);
-		int waitSec = Math.max(ConfigReader.getInteractiveBlockerWaitSeconds(), 30);
-
-		String script = ""
-				+ "window.__ckycBlockerChoice = null;"
-				+ "var old = document.getElementById('ckyc-blocker-prompt');"
-				+ "if (old) { old.remove(); }"
-				+ "var wrap = document.createElement('div');"
-				+ "wrap.id = 'ckyc-blocker-prompt';"
-				+ "wrap.setAttribute('role','alertdialog');"
-				+ "wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;"
-				+ "align-items:center;justify-content:center;background:rgba(15,23,42,0.55);"
-				+ "font-family:Segoe UI,Arial,sans-serif;';"
-				+ "wrap.innerHTML = `"
-				+ "<div style=\"width:min(480px,92vw);background:#fff;border-radius:14px;"
-				+ "box-shadow:0 20px 50px rgba(0,0,0,.28);overflow:hidden;border:1px solid #e2e8f0;\">"
-				+ "<div style=\"background:#b45309;color:#fff;padding:14px 18px;font-size:16px;font-weight:700;\">"
-				+ "⚠ Automation blocker</div>"
-				+ "<div style=\"padding:18px;\">"
-				+ "<div style=\"font-size:15px;font-weight:600;color:#0f172a;margin-bottom:8px;\">" + safeTitle + "</div>"
-				+ "<div style=\"font-size:13px;color:#475569;line-height:1.45;max-height:160px;overflow:auto;"
-				+ "white-space:pre-wrap;\">" + safeDetail + "</div>"
-				+ "<div style=\"font-size:12px;color:#64748b;margin-top:12px;\">"
-				+ "Next step cannot continue until this is resolved. Choose <b>Retry</b> after closing the popup, "
-				+ "or <b>Stop</b> to fail this step.</div>"
-				+ "<div style=\"display:flex;gap:10px;justify-content:flex-end;margin-top:18px;\">"
-				+ "<button id=\"ckyc-blocker-stop\" type=\"button\" style=\"padding:9px 16px;border-radius:8px;"
-				+ "border:1px solid #cbd5e1;background:#f8fafc;color:#0f172a;font-weight:600;cursor:pointer;\">Stop</button>"
-				+ "<button id=\"ckyc-blocker-retry\" type=\"button\" style=\"padding:9px 16px;border-radius:8px;"
-				+ "border:none;background:#1d4ed8;color:#fff;font-weight:600;cursor:pointer;\">Retry</button>"
-				+ "</div></div></div>`;"
-				+ "document.documentElement.appendChild(wrap);"
-				+ "document.getElementById('ckyc-blocker-stop').onclick=function(){window.__ckycBlockerChoice='stop';};"
-				+ "document.getElementById('ckyc-blocker-retry').onclick=function(){window.__ckycBlockerChoice='retry';};";
-
-		try {
-			((JavascriptExecutor) driver).executeScript(script);
-			logger.info("Interactive blocker prompt shown — waiting up to {}s for Stop/Retry", waitSec);
-		} catch (Exception e) {
-			logger.warn("Could not inject blocker prompt: {}", e.getMessage());
-			return BlockerChoice.NONE;
+		String answer = askDecision(driver, "Automation blocker - the next step cannot continue", "#b45309", title, detail,
+				null, "Retry",
+				"close or fix the popup / page by hand first, then click Retry - the same step runs again.");
+		if (answer == null) {
+			logger.warn("Blocker popup: no answer in {}s - skipping this case and continuing", popupWaitSeconds());
+			return BlockerChoice.SKIP_SCENARIO;
 		}
-
-		long deadline = System.currentTimeMillis() + (waitSec * 1000L);
-		while (System.currentTimeMillis() < deadline) {
-			try {
-				Object choice = ((JavascriptExecutor) driver).executeScript("return window.__ckycBlockerChoice;");
-				if ("retry".equals(choice)) {
-					logger.info("User chose Retry on blocker prompt");
-					return BlockerChoice.RETRY;
-				}
-				if ("stop".equals(choice)) {
-					logger.info("User chose Stop on blocker prompt");
-					return BlockerChoice.STOP;
-				}
-			} catch (Exception ignored) {
-				// page may be navigating
-			}
-			sleepQuietly(300);
+		switch (answer) {
+		case "continue":
+			logger.info("User chose Retry on blocker popup");
+			return BlockerChoice.RETRY;
+		case "skip_feature":
+			return BlockerChoice.SKIP_FEATURE;
+		case "stop":
+			return BlockerChoice.STOP;
+		case "skip_scenario":
+		default:
+			return BlockerChoice.SKIP_SCENARIO;
 		}
-		logger.warn("Interactive blocker wait timed out — treating as Stop");
-		return BlockerChoice.STOP;
 	}
 
 	private static void removeInteractivePrompt(WebDriver driver) {
@@ -420,150 +392,152 @@ public final class PopupHandler {
 	}
 
 	/**
-	 * When an expected page / button / field is missing: show details with Continue (wait for manual fix)
-	 * or Stop. After the wait, if still broken, show Continue / Skip scenario / Skip feature / Stop.
-	 * Returns the final user choice (caller applies SoftAssert flags / abort).
+	 * When an expected page / button / field is missing: ONE popup with four answers - Continue (fix by hand, then the
+	 * step runs again), Skip this case, Skip this feature, Stop everything. The popup names the feature, scenario,
+	 * step, Functionality method, Page class and the missing element. No answer in 60 s = skip this case.
 	 */
 	public static BlockerChoice promptMissingExpectedUi(WebDriver driver, String whatIsMissing, String details) {
+		return promptMissingExpectedUi(driver, whatIsMissing, details, null);
+	}
+
+	public static BlockerChoice promptMissingExpectedUi(WebDriver driver, String whatIsMissing, String details,
+			Throwable cause) {
 		if (!shouldShowInteractivePrompt(driver)) {
 			return BlockerChoice.NONE;
 		}
-		BlockerChoice first = showMissingUiPrompt(driver, whatIsMissing, details, false);
-		if (first == BlockerChoice.STOP) {
-			removeInteractivePrompt(driver);
-			return BlockerChoice.STOP;
-		}
-		if (first == BlockerChoice.NONE) {
-			return BlockerChoice.NONE;
-		}
-		// CONTINUE_WAIT / RETRY → wait for manual fix
-		int waitSec = Math.max(ConfigReader.getManualFixWaitSeconds(), 30);
+		BlockerChoice choice = showMissingUiPrompt(driver, whatIsMissing, details, cause);
 		removeInteractivePrompt(driver);
-		logger.info("Waiting {}s for manual fix of: {}", waitSec, whatIsMissing);
-		sleepQuietly(waitSec * 1000L);
-		BlockerChoice second = showMissingUiPrompt(driver, whatIsMissing,
-				details + "\n\nStill missing after " + waitSec
-						+ "s wait. Continue again, skip this scenario, skip this feature, or Stop.",
-				true);
-		removeInteractivePrompt(driver);
-		return second == BlockerChoice.NONE ? BlockerChoice.CONTINUE_WAIT : second;
+		return choice;
 	}
 
-	/** Show module-stop choices immediately; no unnecessary 60-second missing-UI wait. */
+	/** Same four answers for a module that cannot be created (mandatory positive failed). */
 	public static BlockerChoice promptModuleBlocker(WebDriver driver, String title, String details) {
 		if (!shouldShowInteractivePrompt(driver)) {
 			return BlockerChoice.SKIP_FEATURE;
 		}
-		BlockerChoice choice = showMissingUiPrompt(driver, title,
-				details + "\n\nRetry after correcting the application, or Stop module to continue with later modules.",
-				true);
+		BlockerChoice choice = showMissingUiPrompt(driver, title, details, null);
 		removeInteractivePrompt(driver);
 		return choice == BlockerChoice.NONE ? BlockerChoice.SKIP_FEATURE : choice;
 	}
 
-	/**
-	 * @param afterWait when true, buttons are Continue / Skip scenario / Skip feature / Stop
-	 */
-	private static BlockerChoice showMissingUiPrompt(WebDriver driver, String title, String detail,
-			boolean afterWait) {
+	private static BlockerChoice showMissingUiPrompt(WebDriver driver, String title, String detail, Throwable cause) {
 		if (driver == null) {
 			return BlockerChoice.NONE;
 		}
-		String safeTitle = escapeJs(title == null ? "Expected UI missing" : title);
-		String safeDetail = escapeJs(detail == null ? "" : detail);
-		int waitSec = Math.max(ConfigReader.getInteractiveBlockerWaitSeconds(), 60);
-
-		String buttons;
-		if (afterWait) {
-			buttons = ""
-					+ "<button id=\"ckyc-ui-continue\" type=\"button\" style=\"padding:9px 14px;border-radius:8px;"
-					+ "border:none;background:#1d4ed8;color:#fff;font-weight:600;cursor:pointer;\">Continue</button>"
-					+ "<button id=\"ckyc-ui-skip-sc\" type=\"button\" style=\"padding:9px 14px;border-radius:8px;"
-					+ "border:1px solid #cbd5e1;background:#f8fafc;color:#0f172a;font-weight:600;cursor:pointer;\">Skip scenario</button>"
-					+ "<button id=\"ckyc-ui-skip-ft\" type=\"button\" style=\"padding:9px 14px;border-radius:8px;"
-					+ "border:1px solid #cbd5e1;background:#f8fafc;color:#0f172a;font-weight:600;cursor:pointer;\">Stop module</button>"
-					+ "<button id=\"ckyc-ui-stop\" type=\"button\" style=\"padding:9px 14px;border-radius:8px;"
-					+ "border:1px solid #b91c1c;background:#fef2f2;color:#b91c1c;font-weight:600;cursor:pointer;\">Stop</button>";
-		} else {
-			buttons = ""
-					+ "<button id=\"ckyc-ui-continue\" type=\"button\" style=\"padding:9px 14px;border-radius:8px;"
-					+ "border:none;background:#1d4ed8;color:#fff;font-weight:600;cursor:pointer;\">Continue (wait "
-					+ ConfigReader.getManualFixWaitSeconds() + "s)</button>"
-					+ "<button id=\"ckyc-ui-stop\" type=\"button\" style=\"padding:9px 14px;border-radius:8px;"
-					+ "border:1px solid #b91c1c;background:#fef2f2;color:#b91c1c;font-weight:600;cursor:pointer;\">Stop</button>";
+		String answer = askDecision(driver, "Expected page / button / field not available", "#b91c1c", title, detail,
+				cause, "Continue",
+				"fix the page by hand (log in, open the right page, close a dialog) and then click Continue - the same "
+						+ "step runs again right away.");
+		if (answer == null) {
+			logger.warn("Missing-UI popup: no answer in {}s - skipping this case and continuing", popupWaitSeconds());
+			return BlockerChoice.SKIP_SCENARIO;
 		}
+		switch (answer) {
+		case "continue":
+			return BlockerChoice.CONTINUE_WAIT;
+		case "skip_feature":
+			return BlockerChoice.SKIP_FEATURE;
+		case "stop":
+			return BlockerChoice.STOP;
+		case "skip_scenario":
+		default:
+			return BlockerChoice.SKIP_SCENARIO;
+		}
+	}
 
-		String hint = afterWait
-				? "Choose Continue to keep going, Skip scenario/feature, or Stop (close browser + reports)."
-				: "Fix the page manually, then Continue — automation waits "
-						+ ConfigReader.getManualFixWaitSeconds()
-						+ "s. Or Stop to close the browser and generate reports so far.";
+	/**
+	 * Draws the decision popup on the page and waits for a click. Returns continue / skip_scenario / skip_feature / stop,
+	 * or null when nobody answered within the wait.
+	 */
+	private static String askDecision(WebDriver driver, String header, String color, String title, String detail,
+			Throwable cause, String continueLabel, String continueHelp) {
+		int waitSec = popupWaitSeconds();
+		String url = safeUrl(driver);
+		org.json.JSONArray rows = new org.json.JSONArray();
+		for (FailureContext.Row r : FailureContext.describe(cause, url, null)) {
+			if (r.value() != null && !r.value().isBlank()) {
+				rows.put(new org.json.JSONArray().put(r.label()).put(r.value()).put(r.mono()));
+				logger.warn("Decision popup | {}: {}", r.label(), r.value());
+			}
+		}
+		org.json.JSONObject cfg = new org.json.JSONObject();
+		cfg.put("header", header);
+		cfg.put("color", color);
+		cfg.put("title", title == null ? "" : title);
+		String cleanDetail = detail == null ? "" : detail;
+		for (String noise : new String[] { "For documentation on this error", "Build info:", "System info:", "(Session info:" }) {
+			int cut = cleanDetail.indexOf(noise);
+			if (cut > 0) {
+				cleanDetail = cleanDetail.substring(0, cut).strip();
+			}
+		}
+		cfg.put("detail", cleanDetail);
+		cfg.put("rows", rows);
+		cfg.put("continueLabel", continueLabel);
+		cfg.put("continueHelp", continueHelp);
+		cfg.put("secs", waitSec);
 
-		String script = ""
-				+ "window.__ckycBlockerChoice = null;"
-				+ "var old = document.getElementById('ckyc-missing-ui-prompt');"
-				+ "if (old) { old.remove(); }"
-				+ "var wrap = document.createElement('div');"
-				+ "wrap.id = 'ckyc-missing-ui-prompt';"
-				+ "wrap.setAttribute('role','alertdialog');"
-				+ "wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;"
-				+ "align-items:center;justify-content:center;background:rgba(15,23,42,0.55);"
-				+ "font-family:Segoe UI,Arial,sans-serif;';"
-				+ "wrap.innerHTML = `"
-				+ "<div style=\"width:min(520px,92vw);background:#fff;border-radius:14px;"
-				+ "box-shadow:0 20px 50px rgba(0,0,0,.28);overflow:hidden;border:1px solid #e2e8f0;\">"
-				+ "<div style=\"background:#b91c1c;color:#fff;padding:14px 18px;font-size:16px;font-weight:700;\">"
-				+ "⚠ Expected page / button / field missing</div>"
-				+ "<div style=\"padding:18px;\">"
-				+ "<div style=\"font-size:15px;font-weight:600;color:#0f172a;margin-bottom:8px;\">" + safeTitle
-				+ "</div>"
-				+ "<div style=\"font-size:13px;color:#475569;line-height:1.45;max-height:200px;overflow:auto;"
-				+ "white-space:pre-wrap;\">" + safeDetail + "</div>"
-				+ "<div style=\"font-size:12px;color:#64748b;margin-top:12px;\">" + escapeJs(hint) + "</div>"
-				+ "<div style=\"display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px;\">"
-				+ buttons
-				+ "</div></div></div>`;"
-				+ "document.documentElement.appendChild(wrap);"
-				+ "var c=document.getElementById('ckyc-ui-continue');"
-				+ "if(c){c.onclick=function(){window.__ckycBlockerChoice='continue';};}"
-				+ "var s=document.getElementById('ckyc-ui-stop');"
-				+ "if(s){s.onclick=function(){window.__ckycBlockerChoice='stop';};}"
-				+ "var ss=document.getElementById('ckyc-ui-skip-sc');"
-				+ "if(ss){ss.onclick=function(){window.__ckycBlockerChoice='skip_scenario';};}"
-				+ "var sf=document.getElementById('ckyc-ui-skip-ft');"
-				+ "if(sf){sf.onclick=function(){window.__ckycBlockerChoice='skip_feature';};}";
+		String script = "window.__ckycBlockerChoice = null; (function(cfg){"
+				+ "['ckyc-blocker-prompt','ckyc-missing-ui-prompt'].forEach(function(i){var o=document.getElementById(i);if(o){o.remove();}});"
+				+ "function el(t,c,x){var e=document.createElement(t);if(c){e.style.cssText=c;}if(x!=null){e.textContent=x;}return e;}"
+				+ "var w=el('div','position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;"
+				+ "background:rgba(15,23,42,.6);font-family:Segoe UI,Arial,sans-serif;');"
+				+ "w.id='ckyc-missing-ui-prompt';w.setAttribute('role','alertdialog');"
+				+ "var box=el('div','width:min(680px,95vw);max-height:94vh;overflow:auto;background:#fff;border-radius:14px;"
+				+ "box-shadow:0 20px 50px rgba(0,0,0,.3);border:1px solid #e2e8f0;');"
+				+ "box.appendChild(el('div','background:'+cfg.color+';color:#fff;padding:14px 18px;font-size:16px;font-weight:700;','\\u26A0 '+cfg.header));"
+				+ "var body=el('div','padding:16px 18px;');box.appendChild(body);"
+				+ "body.appendChild(el('div','font-size:15px;font-weight:700;color:#0f172a;margin-bottom:10px;',cfg.title));"
+				+ "var tb=el('table','width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;');"
+				+ "cfg.rows.forEach(function(p){var tr=document.createElement('tr');"
+				+ "tr.appendChild(el('td','padding:5px 8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:600;white-space:nowrap;vertical-align:top;color:#334155;',p[0]));"
+				+ "tr.appendChild(el('td','padding:5px 8px;border:1px solid #e2e8f0;word-break:break-word;color:#0f172a;'"
+				+ "+(p[2]?'font-family:Consolas,monospace;font-size:12px;':''),p[1]));tb.appendChild(tr);});"
+				+ "body.appendChild(tb);"
+				+ "if(cfg.detail){body.appendChild(el('div','font-size:12px;color:#475569;line-height:1.45;max-height:120px;overflow:auto;"
+				+ "white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;margin-bottom:10px;',cfg.detail));}"
+				+ "var lg=el('div','font-size:12px;color:#334155;line-height:1.55;margin-bottom:12px;');"
+				+ "[[cfg.continueLabel,cfg.continueHelp],"
+				+ "['Skip this case','this scenario is marked skipped; the next scenario of the same feature runs.'],"
+				+ "['Skip this feature','the rest of this feature file is skipped; the next feature / module you ticked still runs.'],"
+				+ "['Stop everything','the WHOLE automation ends now - every remaining scenario, feature and module ticked in the "
+				+ "Control Panel is cancelled; reports for what already ran are written and the browser closes.']]"
+				+ ".forEach(function(x){var d=el('div');d.appendChild(el('b',null,x[0]+' - '));d.appendChild(document.createTextNode(x[1]));lg.appendChild(d);});"
+				+ "body.appendChild(lg);"
+				+ "var cd=el('div','font-size:12px;color:#b45309;margin-bottom:10px;','');body.appendChild(cd);"
+				+ "var left=cfg.secs;function tick(){cd.textContent='No answer in '+left+'s = Skip this case and continue.';}tick();"
+				+ "var iv=setInterval(function(){left--;if(left<0){clearInterval(iv);}else{tick();}},1000);"
+				+ "var bar=el('div','display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;');"
+				+ "function btn(label,css,val){var b=el('button',css+'padding:9px 14px;border-radius:8px;font-weight:600;cursor:pointer;',label);"
+				+ "b.type='button';b.onclick=function(){clearInterval(iv);window.__ckycBlockerChoice=val;};bar.appendChild(b);}"
+				+ "btn(cfg.continueLabel,'border:none;background:#1d4ed8;color:#fff;','continue');"
+				+ "btn('Skip this case','border:1px solid #cbd5e1;background:#f8fafc;color:#0f172a;','skip_scenario');"
+				+ "btn('Skip this feature','border:1px solid #cbd5e1;background:#f8fafc;color:#0f172a;','skip_feature');"
+				+ "btn('Stop everything','border:1px solid #b91c1c;background:#fef2f2;color:#b91c1c;','stop');"
+				+ "body.appendChild(bar);w.appendChild(box);document.documentElement.appendChild(w);"
+				+ "})(" + cfg + ");";
 
 		try {
 			((JavascriptExecutor) driver).executeScript(script);
-			logger.info("Missing-UI prompt shown (afterWait={}) — waiting up to {}s", afterWait, waitSec);
+			logger.info("Decision popup shown ({}) - waiting up to {}s", header, waitSec);
 		} catch (Exception e) {
-			logger.warn("Could not inject missing-UI prompt: {}", e.getMessage());
-			return BlockerChoice.NONE;
+			logger.warn("Could not inject decision popup: {}", e.getMessage());
+			return "skip_scenario";
 		}
 
 		long deadline = System.currentTimeMillis() + (waitSec * 1000L);
 		while (System.currentTimeMillis() < deadline) {
 			try {
 				Object choice = ((JavascriptExecutor) driver).executeScript("return window.__ckycBlockerChoice;");
-				if ("continue".equals(choice)) {
-					return afterWait ? BlockerChoice.CONTINUE_WAIT : BlockerChoice.CONTINUE_WAIT;
-				}
-				if ("stop".equals(choice)) {
-					return BlockerChoice.STOP;
-				}
-				if ("skip_scenario".equals(choice)) {
-					return BlockerChoice.SKIP_SCENARIO;
-				}
-				if ("skip_feature".equals(choice)) {
-					return BlockerChoice.SKIP_FEATURE;
+				if (choice != null) {
+					return String.valueOf(choice);
 				}
 			} catch (Exception ignored) {
 				// page may be navigating
 			}
 			sleepQuietly(300);
 		}
-		logger.warn("Missing-UI prompt wait timed out — treating as Stop");
-		return BlockerChoice.STOP;
+		return null;
 	}
 
 	/** Apply SoftAssert skip/abort flags from a missing-UI choice; throws on STOP. */

@@ -168,19 +168,25 @@ public class SearchFunctionality extends BaseClass {
 			throw new AssertionError("Mobile positive input is not searchable | " + String.join(" | ", issues));
 		}
 
+		String before = signature();
 		clickSearch();
-		String toast = ToastHandler.waitAndRead(getDriver(), 3000);
+		Response answer = awaitResponse(before);
+		String toast = answer.message();
 		String alert = alertDescription();
-		boolean recordVisible = resultIsMeaningful();
+		boolean recordVisible = answer.record();
 		if (recordVisible) {
 			validateAndPersistResult("Mobile", "mobile=" + MOBILE);
 			return;
 		}
 		String responseText = toast.isBlank() ? alert : toast;
+		boolean backendError = containsAny(responseText, BACKEND_ERROR_WORDS);
 		boolean explicitFailure = containsAny(responseText, "no record", "not found", "invalid", "error", "failed",
 				"failure");
 		boolean bareSuccess = containsAny(responseText, "success");
-		if (bareSuccess) {
+		if (backendError) {
+			issues.add("APP DEFECT: back end failed - the application answered '" + responseText + "' after "
+					+ String.format(Locale.ROOT, "%.0f", answer.seconds()) + " s");
+		} else if (bareSuccess) {
 			issues.add("APP DEFECT: red Success alert with no CKYC result");
 		} else if (explicitFailure) {
 			issues.add("Positive mobile search returned an explicit failure/no-record response");
@@ -191,8 +197,10 @@ public class SearchFunctionality extends BaseClass {
 				"Submit configured mobile search",
 				"Visible CKYC result with populated fields",
 				"submittedMobile='" + MOBILE + "'; recordVisible=false; alert=" + alert
-						+ "; toast='" + toast + "'; responseClass="
-						+ (bareSuccess ? "red-bare-success" : explicitFailure ? "explicit-failure" : "empty-response")
+						+ "; toast='" + toast + "'; waited=" + String.format(Locale.ROOT, "%.1f", answer.seconds())
+						+ "s; responseClass="
+						+ (backendError ? "backend-error" : bareSuccess ? "red-bare-success" : explicitFailure ? "explicit-failure"
+								: "empty-response")
 						+ "; issues=" + String.join(" | ", issues),
 				false, "mobile=" + MOBILE);
 		Hooks.captureMilestone("Mobile search response evidence - " + responseText, false);
@@ -300,17 +308,25 @@ public class SearchFunctionality extends BaseClass {
 	}
 
 	private void submitAndRequireMeaningfulRecord(String type, String testData) {
+		String before = signature();
 		clickSearch();
-		String toast = ToastHandler.waitAndRead(getDriver(), 3000);
-		boolean recordVisible = resultIsMeaningful();
+		Response answer = awaitResponse(before);
+		String toast = answer.message();
+		boolean recordVisible = answer.record();
 		if (!recordVisible) {
 			String alert = alertDescription();
-			String issue = containsAny(toast + " " + alert, "success")
-					? "APP DEFECT: alert says Success but no CKYC result is visible"
-					: "ISSUE: no meaningful CKYC result section/identifier visible";
+			String issue = containsAny(toast + " " + alert, BACKEND_ERROR_WORDS)
+					? "APP DEFECT: back end failed - the application answered '" + (toast.isBlank() ? alert : toast)
+							+ "' after " + String.format(Locale.ROOT, "%.0f", answer.seconds()) + " s"
+					: containsAny(toast + " " + alert, "success")
+							? "APP DEFECT: alert says Success but no CKYC result is visible"
+							: answer.timedOut()
+									? "DEFECT: no result and no message within " + String.format(Locale.ROOT, "%.0f", answer.seconds()) + " s"
+									: "ISSUE: no meaningful CKYC result section/identifier visible";
 			StepLog.check("Search | " + type + " positive result", "Submit valid " + type + " search",
 					"Visible CKYC result with populated fields",
-					"recordVisible=false; alert=" + alert + "; toast='" + toast + "'; issues=" + issue,
+					"recordVisible=false; alert=" + alert + "; toast='" + toast + "'; waited="
+							+ String.format(Locale.ROOT, "%.1f", answer.seconds()) + "s; issues=" + issue,
 					false, testData);
 			Hooks.captureMilestone(type + " search response without record", false);
 			return;
@@ -434,7 +450,7 @@ public class SearchFunctionality extends BaseClass {
 		return pass;
 	}
 
-	private boolean isCustomerPhotoFilePresent() {
+	boolean isCustomerPhotoFilePresent() {
 		List<WebElement> images = getDriver().findElements(SearchPage.CUSTOMER_PHOTO_IMAGE);
 		for (WebElement image : images) {
 			try {
@@ -492,7 +508,7 @@ public class SearchFunctionality extends BaseClass {
 		}
 	}
 
-	private void enterDocument(String value) {
+	void enterDocument(String value) {
 		WebElement input = PomElementManager.findVisible(SearchPage.DOCUMENT_NUMBER_INPUT, waitSeconds);
 		input.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.DELETE);
 		if (value != null && !value.isBlank()) {
@@ -501,12 +517,98 @@ public class SearchFunctionality extends BaseClass {
 		MasterUiHelper.sleep(250);
 	}
 
-	private void clickSearch() {
+	/** Words that mean the application's back end failed (not an answer about the value that was searched). */
+	static final String[] BACKEND_ERROR_WORDS = { "token api", "server error", "internal server", "something went wrong",
+			"service unavailable", "timed out", "timeout", "network error", "status code 5" };
+
+	/** What the application answered to one Search click. */
+	record Response(boolean record, boolean timedOut, String message, String alertSeverity, double seconds) {
+	}
+
+	/**
+	 * Waits for the application's answer after Search is clicked: a CKYC record, a toast / alert / field message, or
+	 * the quiet limit. Search can take time and the back end's "Token API Failed" toast arrives about 15-20 s after the
+	 * click, so this waits {@code search.noResponseAfterSeconds} (default 35) before it calls the silence a defect, and
+	 * never longer than {@code search.resultTimeoutSeconds} (default 90).
+	 */
+	Response awaitResponse(String beforeSignature) {
+		int limit = Integer.parseInt(ConfigReader.get("search.resultTimeoutSeconds", "90"));
+		int quiet = Math.min(limit, Integer.parseInt(ConfigReader.get("search.noResponseAfterSeconds", "35")));
+		long start = System.currentTimeMillis();
+		long deadline = start + limit * 1000L;
+		String prev = null;
+		int stable = 0;
+		while (System.currentTimeMillis() < deadline) {
+			MasterUiHelper.sleep(500);
+			boolean busy = false;
+			for (WebElement e : getDriver().findElements(SearchPage.PROGRESS)) {
+				try {
+					if (e.isDisplayed()) {
+						busy = true;
+						break;
+					}
+				} catch (RuntimeException ex) {
+					// re-rendered
+				}
+			}
+			String sig = signature();
+			stable = sig.equals(prev) ? stable + 1 : 0;
+			prev = sig;
+			long elapsed = System.currentTimeMillis() - start;
+			boolean changed = !sig.equals(beforeSignature);
+			// a toast is short-lived: read it every round, not only when the page looks settled
+			String toast = ToastHandler.readIfPresent(getDriver());
+			String text = toast == null ? "" : toast.trim();
+			boolean record = !busy && resultIsMeaningful();
+			if (record || (!text.isEmpty() && !busy)) {
+				String alert = alertDescription();
+				return new Response(record, false, text, alert, elapsed / 1000.0);
+			}
+			if (!busy && stable >= 2 && (changed || elapsed >= 4000)) {
+				String alert = alertDescription();
+				String alertText = alert.startsWith("text='") ? alert.substring(6, Math.max(6, alert.indexOf("';"))) : "";
+				if (text.isEmpty()) {
+					text = alertText;
+				}
+				if (!text.isEmpty() || !fieldError().isEmpty()) {
+					return new Response(false, false, text, alert, elapsed / 1000.0);
+				}
+			}
+			if (elapsed >= quiet * 1000L && !busy) {
+				break;
+			}
+		}
+		String alert = alertDescription();
+		return new Response(false, true, "", alert, (System.currentTimeMillis() - start) / 1000.0);
+	}
+
+	/** What the page shows right now about a result, used to tell a new answer from the previous one. */
+	String signature() {
+		return readResultValue("CKYC Reference ID") + "|" + readResultValue("CKYC Number") + "|" + alertDescription()
+				+ "|" + fieldError();
+	}
+
+	String fieldError() {
+		StringBuilder sb = new StringBuilder();
+		for (WebElement e : getDriver().findElements(SearchPage.FIELD_ERROR)) {
+			try {
+				String t = e.getText().trim();
+				if (!t.isEmpty() && sb.indexOf(t) < 0) {
+					sb.append(sb.length() > 0 ? " | " : "").append(t);
+				}
+			} catch (RuntimeException ignored) {
+				// re-rendered
+			}
+		}
+		return sb.toString();
+	}
+
+	void clickSearch() {
 		MasterUiHelper.clickJs(SearchPage.SEARCH_BUTTON, waitSeconds);
 		MasterUiHelper.sleep(700);
 	}
 
-	private String readDocument() {
+	String readDocument() {
 		try {
 			String value = PomElementManager.findVisible(SearchPage.DOCUMENT_NUMBER_INPUT, waitSeconds)
 					.getAttribute("value");
@@ -525,7 +627,7 @@ public class SearchFunctionality extends BaseClass {
 		}
 	}
 
-	private boolean isDisabled(By locator) {
+	boolean isDisabled(By locator) {
 		List<WebElement> elements = getDriver().findElements(locator);
 		if (elements.isEmpty()) {
 			return true;
@@ -535,21 +637,21 @@ public class SearchFunctionality extends BaseClass {
 				|| "true".equalsIgnoreCase(element.getAttribute("aria-disabled"));
 	}
 
-	private boolean resultIsMeaningful() {
+	boolean resultIsMeaningful() {
 		return hasValue(readResultValue("CKYC Number"))
 				&& hasValue(readResultValue("CKYC Reference ID"));
 	}
 
-	private String textOf(By locator) {
+	String textOf(By locator) {
 		List<WebElement> elements = getDriver().findElements(locator);
 		return elements.isEmpty() ? "" : elements.get(0).getText().trim();
 	}
 
-	private String readResultValue(String label) {
+	String readResultValue(String label) {
 		return textOf(SearchPage.resultValue(label));
 	}
 
-	private String alertDescription() {
+	String alertDescription() {
 		List<WebElement> alerts = getDriver().findElements(SearchPage.ALERT);
 		if (alerts.isEmpty()) {
 			return "none";
@@ -563,7 +665,7 @@ public class SearchFunctionality extends BaseClass {
 		return "text='" + text + "'; severity=" + severity + "; class='" + classes + "'";
 	}
 
-	private static boolean hasValue(String value) {
+	static boolean hasValue(String value) {
 		if (value == null) {
 			return false;
 		}
@@ -577,7 +679,7 @@ public class SearchFunctionality extends BaseClass {
 		return "Full Name".equals(label) || "Father / Spouse Full Name".equals(label);
 	}
 
-	private static boolean containsAny(String value, String... candidates) {
+	static boolean containsAny(String value, String... candidates) {
 		String text = value == null ? "" : value.toLowerCase(Locale.ROOT);
 		for (String candidate : candidates) {
 			if (text.contains(candidate)) {

@@ -4,7 +4,7 @@
 @UserManagement @Roles @RolesNegative @Negative
 Feature: User Management - Roles Maker Checker (Negative)
   Accounts come from TestData/user-management.properties so they can be updated without rewriting steps.
-  Maker = config username (auto). Same-role Checker = admin (negative). Super Admin is never touched.
+  Maker = automaker, Checker = autochecker. Same-role Checker = admin (negative). Super Admin is never touched.
 
   Background:
     Given user is logged in and on CKYC dashboard

@@ -67,8 +67,28 @@ public final class DvsConfig {
 		return out;
 	}
 
+	/**
+	 * The workbook path can only come from -D / config.properties / default. It must NOT go through get(): get()
+	 * falls back to the CONFIG sheet, and finding the sheet needs this path (infinite recursion otherwise).
+	 */
 	public static Path testDataPath() {
-		return Paths.get(get(TEST_DATA_PATH_KEY, DEFAULT_TEST_DATA));
+		return Paths.get(withoutSheet(TEST_DATA_PATH_KEY, DEFAULT_TEST_DATA));
+	}
+
+	private static String withoutSheet(String key, String defaultValue) {
+		String v = System.getProperty(key);
+		if (v != null && !v.isBlank()) {
+			return v.trim();
+		}
+		try {
+			v = ConfigReader.get(key, "");
+			if (v != null && !v.isBlank()) {
+				return v.trim();
+			}
+		} catch (RuntimeException | LinkageError ignored) {
+			// key not in config.properties - use the default
+		}
+		return defaultValue;
 	}
 
 	public static synchronized void reload() {

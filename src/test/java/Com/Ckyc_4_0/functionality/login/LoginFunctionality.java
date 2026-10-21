@@ -31,6 +31,11 @@ public class LoginFunctionality extends BaseClass {
 
 	public void selectRuntimeMode(String mode) {
 		String normalized = mode == null ? "" : mode.trim().toUpperCase();
+		if (normalized.isEmpty() || driver.findElements(LoginPage.RUNTIME_API_BUTTON).isEmpty()
+				&& driver.findElements(LoginPage.RUNTIME_MOCK_BUTTON).isEmpty()) {
+			logger.info("Runtime mode selector is not on this login page (build without API/Mock switch) - skipping '{}'", normalized);
+			return;
+		}
 		switch (normalized) {
 		case "API" -> {
 			if (!isRuntimeModeSelected(LoginPage.RUNTIME_API_BUTTON)) {

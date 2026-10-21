@@ -31,7 +31,7 @@ filterRefreshWaitMs=800
 # true = when a blocker stops the next step, show Stop / Retry warning on the page (you click)
 # false = unattended: auto-dismiss SweetAlert and retry once
 interactiveBlockerPrompt=true
-interactiveBlockerWaitSeconds=300
+interactiveBlockerWaitSeconds=60
 # Seconds to wait after Continue so you can fix missing UI manually
 manualFixWaitSeconds=60
 
@@ -75,7 +75,8 @@ executionLogPath=Report Output/Execution Logs
 
 # --- DVS 2.0 automation (all optional; CONFIG sheet of DVS_Automation_TestData.xlsx supplies defaults) ---
 # dvs.url=https://iflowckyc.isolveapps.in/dvs-2
-# dvs.loginWaitSeconds=240
+# dvs.shellWaitSeconds=20
+# dvs.allowDirectUrl=true    (default true: the /dvs-2 endpoint is hit ONLY if the side-nav locators fail; false = never)
 # dvs.dateFormat=dd-MM-yyyy
 # dvs.queue.rowXpath=(//*[normalize-space(text())='{ID}'])[1]
 # Run filters can also be passed as -Ddvs.module=IND -Ddvs.priority=P0 -Ddvs.group=IND-D-* -Ddvs.tc=DVS-NEG-IND-0019
@@ -83,6 +84,83 @@ executionLogPath=Report Output/Execution Logs
 
 # --- DVS 2.0 queue search: customer IDs to open (comma separated; first one found in the Maker queue is used) ---
 # These are fixed test records for now; to be made dynamic later.
-dvs.cust.individual=IN03100002
+dvs.cust.individual=IN05100004
 dvs.cust.minor=MN02100119,KDEV200028
 dvs.cust.le=LE02100010,LE02100008
+# DVS stuck-scenario popup: Retry / Skip and continue / Stop. No answer = Skip. Max 60 seconds. Off in headless runs.
+# dvs.stuckPrompt=true
+# dvs.stuckPromptSeconds=60
+
+# --- Browser start-up (defaults shown; all optional) ---
+# The app refuses to run when it is already open in another tab on this machine. Before the automation browser
+# starts, Chrome/Edge TABS whose title contains one of these words are closed (only those tabs, Windows only).
+#closeExistingAppTabs=true
+#appTabTitleKeywords=iFlowCKYC
+# Open /login directly. LEAVE OFF: this server returns HTTP 500 for a direct hit on /login (verified 2026-10-06).
+#openLoginDirect=false
+#loginPath=/login
+
+# ---- Reports module compare (TestReportsRunner) -------------------------------------------------
+# NEW / UPDATE and ALL / Individual / Legal entity are all run by default (Weekly dashboard vs Reports module).
+#reports.apps=NEW,UPDATE
+#reports.constitutions=ALL,Individual,Legal entity
+# blank = every category; e.g. reports.categories=Data pushed from FI,Others
+#reports.categories=
+# a column on only one side (dashboard popup vs Reports module): true = counted as a FAIL (default), false = only noted in COLUMN_DIFFS
+#reports.columnMismatchIsFail=true
+
+# ---- Test Control Panel (HTML popup shown in the browser right after it opens) ----------------------
+# Shown by EVERY runner (pre-ticked with that runner's module) and by TestControlPanelRunner (all modules).
+# Skipped automatically when headless=true or interactiveBlockerPrompt=false.
+#controlPanel.onRunners=true
+#panel.timeoutMinutes=60
+# name printed as "Tested by" in every report
+#testedBy=Aravindhan
+
+# --- Search: how long to wait for the application's answer after the Search button is clicked ---
+# The back end's "Token API Failed" toast arrives about 15-20 s after the click, so silence is only called a defect after
+# search.noResponseAfterSeconds (default 35); search.resultTimeoutSeconds (default 90) is the hard limit.
+#search.noResponseAfterSeconds=35
+#search.resultTimeoutSeconds=90
+
+# ---- Screen recording (OFF by default) ----------------------------------------------------------------
+# Three ways to switch it on (highest priority first): the "Screen recording" toggle in the Test Control Panel,
+# the runner class constant `RECORD_SCREEN = true` (starts as soon as the browser is open), or recording.enabled=true
+# for every runner. The video is Report Output/Screen Recordings/<date>/<runner>_<date_time>.avi with a REC timer and the
+# date/time in the corner. It is taken from the browser itself, so other windows opened on top do not appear in it.
+# It stops after the reports are generated: completion toast in the browser, final screenshot, then the file is closed.
+#recording.enabled=false
+#recording.fps=5
+#recording.maxWidth=1280
+#recording.quality=0.6
+# ---- End of run -------------------------------------------------------------------------------------------
+# Excel execution report opens (in Excel) when the run ends, like the HTML reports.
+#openExcelReportAfterRun=true
+# Also save a picture of the whole screen (browser window included) after completion.
+#finalScreenshot.fullScreen=true
+
+# ---- Locator capture (TestLocatorRecorder: you do the steps by hand, the tool saves the locators) -------------
+# How often (ms) the recorder reads what you did in the page.
+#capture.pollMs=800
+
+# ---- Bulk Import to Customer Information (TestBulkImportRunner; uploads a CSV to the LIVE application) --------
+# Customers (random, from those that reached Success) compared on Customer Information.
+#bulkimport.compareCount=3
+# Dashboard wait: refresh every N seconds for at most N minutes; application types read (NEW,UPDATE).
+#bulkimport.pollSeconds=30
+#bulkimport.waitMinutes=7
+#bulkimport.apps=NEW,UPDATE
+# Monitor Automation: process restarted, then the page is refreshed every N seconds, at most N times, until Not Responding goes.
+#bulkimport.process=IFLOW PROCESS
+#bulkimport.iflowRefreshSeconds=10
+#bulkimport.iflowRefreshes=6
+# Frozen mapping (review the draft in Current Data/BulkImport/mapping, then copy it here):
+#   src/test/resources/CustomerInfo/FieldMap_IN.csv, CodeMap_IN.csv   (and FieldMap_LE.csv, CodeMap_LE.csv)
+
+# ---- Locator crawler (TestLocatorCrawler: finds the locators of the whole application by itself, read-only) ----
+# Output: Locator Capture/<date>/<time>_crawl/ (new_elements.md, stale_locators.md, generated_pages/*.java ...)
+#crawl.maxPages=40
+#crawl.maxClicksPerPage=10
+# comma separated nav labels not to visit, and extra words never to click (save, delete, approve, restart, upload ... are always blocked)
+#crawl.skipModules=
+#crawl.blockWords=

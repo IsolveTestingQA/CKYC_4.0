@@ -409,6 +409,11 @@ public class ExcelReport {
 			writeCell(row, 10, blankDash(screenshotFiles), rowStyle);
 			writeCell(row, 11, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), rowStyle);
 
+			AdvancedRunReport.get().step(feature, scenario, tcId, step, expected, actual, status, error, testData,
+					toastMessage, screenshotFiles);
+			ExtentReportManager.recordStep(tcId, step, expected, actual, status, error, testData, toastMessage,
+					screenshotFiles);
+
 			String errorText = (error == null || error.isEmpty()) ? "-" : error;
 			Cell errorCell = row.createCell(12);
 			errorCell.setCellValue(errorText);
@@ -454,7 +459,7 @@ public class ExcelReport {
 			Row titleRow = sheet.createRow(rowIdx++);
 			titleRow.setHeightInPoints(24);
 			Cell titleCell = titleRow.createCell(0);
-			titleCell.setCellValue("CKYC 4.0 Execution Summary");
+			titleCell.setCellValue("CKYC 4.0 Execution Summary  |  Tested by: " + ConfigReader.testedBy());
 			titleCell.setCellStyle(titleStyle);
 			for (int i = 1; i < cols.length; i++) {
 				Cell c = titleRow.createCell(i);

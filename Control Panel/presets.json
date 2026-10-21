@@ -1,0 +1,26 @@
+{"last": {
+  "mode": "POSITIVE",
+  "opts": {
+    "extentCucumber": true,
+    "advanced": true,
+    "record": false,
+    "stopFirst": false
+  },
+  "action": "start",
+  "preset": "",
+  "modules": {
+    "usermgmt": {
+      "texts": {},
+      "subs": [
+        "users",
+        "roles"
+      ],
+      "groups": {}
+    },
+    "login": {
+      "texts": {},
+      "subs": ["login"],
+      "groups": {}
+    }
+  }
+}}

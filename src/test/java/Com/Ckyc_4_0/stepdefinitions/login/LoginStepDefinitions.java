@@ -92,14 +92,6 @@ public class LoginStepDefinitions {
 	}
 
 	private boolean isAlreadyAuthenticated() {
-		try {
-			String url = BaseClass.getDriver() == null ? "" : BaseClass.getDriver().getCurrentUrl();
-			return url != null
-					&& !url.toLowerCase().contains("/login")
-					&& (url.contains(ConfigReader.getDashboardUrlPath()) || url.contains("/ckyc/")
-							|| url.contains("/admin/"));
-		} catch (Exception ignored) {
-			return false;
-		}
+		return Com.Ckyc_4_0.utils.AppSession.isInsideApp(BaseClass.getDriver());
 	}
 }

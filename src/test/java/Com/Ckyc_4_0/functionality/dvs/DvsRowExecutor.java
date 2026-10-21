@@ -9,9 +9,11 @@ import Com.Ckyc_4_0.utils.dvs.DvsConfig;
 import Com.Ckyc_4_0.utils.dvs.DvsFindings;
 import Com.Ckyc_4_0.utils.dvs.DvsLocators;
 import Com.Ckyc_4_0.utils.dvs.DvsRow;
+import Com.Ckyc_4_0.utils.dvs.DvsScenarioLoader;
 import Com.Ckyc_4_0.utils.dvs.DvsScreenshot;
 import Com.Ckyc_4_0.utils.dvs.DvsSnapshot;
 import Com.Ckyc_4_0.utils.dvs.DvsStepLog;
+import Com.Ckyc_4_0.utils.dvs.DvsTypedValues;
 
 import org.openqa.selenium.NoSuchSessionException;
 import org.openqa.selenium.NoSuchWindowException;
@@ -94,9 +96,18 @@ public final class DvsRowExecutor {
 
 	public void execute(DvsRow row) {
 		DvsStepLog.tc(row.tcId());
+		if (DvsScenarioLoader.SHEET_IND.equals(row.sheet()) || DvsScenarioLoader.SHEET_LE.equals(row.sheet())) {
+			executeSuite(row);
+			return;
+		}
 		String field = row.field();
 		if (field.toLowerCase(Locale.ROOT).endsWith(" tab")) {
 			executeTabRoundTrip(row, field.substring(0, field.length() - 4).trim());
+			return;
+		}
+		List<DvsTypedValues.Pair> typed = DvsTypedValues.get(row.tcId());
+		if (!typed.isEmpty()) {
+			executeTyped(row, typed);
 			return;
 		}
 		DvsLocators.Resolution res = L.resolveField(row.moduleCode(), field);
@@ -125,6 +136,251 @@ public final class DvsRowExecutor {
 				return;
 			}
 			runLiteral(row, res.id(), value);
+		} catch (RunAbort e) {
+			throw e;
+		} catch (WebDriverException e) {
+			if (sessionGone(e)) {
+				throw new RunAbort("Browser session lost: " + firstLine(e), e);
+			}
+			fail(row, "Exception: " + firstLine(e));
+		} catch (RuntimeException e) {
+			fail(row, "Exception: " + firstLine(e));
+		}
+		verdictStep(row);
+	}
+
+	// ---------------------------------------------------------------- Individual / Legal Entity suite rows
+
+	private Set<String> baselineLines = new LinkedHashSet<>();
+	private Map<String, Integer> baselineBadges = new LinkedHashMap<>();
+	private Map<String, String> suiteMakerFull = new LinkedHashMap<>();
+
+	/**
+	 * Before the first suite row: the tab badges and the validation messages the record ALREADY has (one Submit
+	 * with no edits), so every row is judged only on what its own value adds. If that Submit goes through (a record
+	 * with no errors at all) it is sent back to Maker and the suite stops - a clean live record is never submit-tested.
+	 */
+	public boolean captureSuiteBaseline(String moduleCode) {
+		String prefix = "LE".equals(moduleCode) ? "LE" : "IND";
+		suiteMakerFull = DvsRestoreManager.captureFull(prefix);
+		DvsFieldActions.dismissDialogIfOpen();
+		String toast = DvsNavigation.submit();
+		String dialog = DvsFieldActions.dialogText();
+		if (DvsCheckerFlow.submitSucceeded(toast)) {
+			DvsCheckerFlow.Outcome out = DvsCheckerFlow.recover("SUITE-BASELINE", moduleCode, customerId,
+					"baseline Submit with no edits (record had no validation errors)", suiteMakerFull, lastPositive);
+			customerBlocked = true;
+			blockedReason = "Record " + customerId + " has no validation errors, so a Submit would be accepted: the suite did not "
+					+ "run on it (reverted=" + out.reverted() + ", backInMaker=" + out.backInMaker() + "). Use a record with open errors.";
+			DvsStepLog.step("suite-baseline").field(customerId).actual(blockedReason).result(DvsStepLog.FAIL).log();
+			return false;
+		}
+		baselineLines = new LinkedHashSet<>();
+		for (String s : DvsFieldActions.validationLines(dialog)) {
+			baselineLines.add(s.toLowerCase(Locale.ROOT));
+		}
+		baselineBadges = DvsFieldActions.tabBadges();
+		String shot = DvsScreenshot.capture("SUITE-BASELINE", "baseline-submit");
+		DvsFieldActions.closeDialog();
+		DvsStepLog.step("suite-baseline").field(customerId)
+				.actual(baselineLines.size() + " existing validation messages, tab badges " + baselineBadges)
+				.toast(toast).dialog(oneLine(dialog)).shot(shot).result(DvsStepLog.INFO).log();
+		return true;
+	}
+
+	/**
+	 * One scenario: open the tab, enter the value, blur (inline message), Save (temporary save), enter it again if
+	 * Save dropped it, Submit to Checker (the real validation answer: toast, error dialog, tab badge, inline message),
+	 * screenshot, close the dialog. The engine restores the record afterwards.
+	 */
+	private void executeSuite(DvsRow row) {
+		String id = row.get("Locator_ID");
+		String tab = row.get("Tab");
+		String expect = row.get("Expect").toUpperCase(Locale.ROOT);
+		String contains = row.get("Error_Contains");
+		if (!L.has(id)) {
+			row.result(DvsRow.NOT_RUN, "Unknown locator " + id + " in the scenario file");
+			return;
+		}
+		row.locatorId(id);
+		String value = token(row.inputValue());
+		String kind = L.kind(id);
+		if (dryRun) {
+			row.result(DvsRow.PLANNED, "would open '" + tab + "', set " + id + " = '" + abbreviate(value) + "', Save, Submit to Checker, expect "
+					+ expect + (contains.isEmpty() ? "" : " containing '" + contains + "'") + ", then restore");
+			return;
+		}
+		try {
+			DvsFieldActions.dismissDialogIfOpen();
+			DvsFieldActions.openTab(tab);
+			touched.add(id);
+			String before = DvsFieldActions.read(id);
+			for (String pair : row.get("Setup").split(";")) {
+				int eq = pair.indexOf('=');
+				if (eq > 0 && L.has(pair.substring(0, eq).trim())) {
+					String sid = pair.substring(0, eq).trim();
+					touched.add(sid);
+					DvsFieldActions.set(sid, token(pair.substring(eq + 1).trim()));
+					DvsFieldActions.blur(sid);
+				}
+			}
+			DvsFieldActions.set(id, value);
+			DvsFieldActions.blur(id);
+			String typed = DvsFieldActions.read(id);
+			String inline = DvsFieldActions.errorText(id);
+
+			String saveToast = DvsNavigation.save();
+			String afterSave = DvsFieldActions.read(id);
+			String savedNote = "";
+			if (!DvsFieldActions.sameValue(kind, typed, afterSave)) {
+				savedNote = " | Save changed the field: typed '" + abbreviate(typed) + "', now '" + abbreviate(afterSave) + "' - entered again before Submit";
+				DvsFieldActions.set(id, value);
+				DvsFieldActions.blur(id);
+			}
+
+			String submitToast = DvsNavigation.submit();
+			String dialog = DvsFieldActions.dialogText();
+			boolean submitted = DvsCheckerFlow.submitSucceeded(submitToast);
+			List<String> newLines = new java.util.ArrayList<>();
+			for (String s : DvsFieldActions.validationLines(dialog)) {
+				if (!baselineLines.contains(s.toLowerCase(Locale.ROOT))) {
+					newLines.add(s);
+				}
+			}
+			Map<String, Integer> badges = DvsFieldActions.tabBadges();
+			int badgeUp = badges.getOrDefault(tab, 0) - baselineBadges.getOrDefault(tab, 0);
+			String inlineAfter = DvsFieldActions.errorText(id);
+			String shot = DvsScreenshot.capture(row.tcId(), "after-submit");
+			row.screenshot(shot);
+			DvsFieldActions.closeDialog();
+
+			if (submitted) {
+				suiteSubmitted(row, id, value, submitToast);
+				verdictStep(row);
+				return;
+			}
+
+			List<String> msgs = new java.util.ArrayList<>();
+			for (String m : List.of(inline, inlineAfter)) {
+				if (!m.isEmpty() && !msgs.contains(m)) {
+					msgs.add(m);
+				}
+			}
+			msgs.addAll(newLines);
+			boolean match = contains.isEmpty() ? !msgs.isEmpty() || badgeUp > 0
+					: msgs.stream().anyMatch(m -> m.toLowerCase(Locale.ROOT).contains(contains.toLowerCase(Locale.ROOT)));
+			String actual = "typed '" + abbreviate(typed) + "' | inline: " + (inline.isEmpty() ? "-" : inline)
+					+ " | Save toast: " + (saveToast.isEmpty() ? "-" : saveToast)
+					+ " | Submit toast: " + (submitToast.isEmpty() ? "-" : submitToast)
+					+ " | new errors: " + (newLines.isEmpty() ? "none" : String.join("; ", newLines))
+					+ " | tab badge " + (badgeUp == 0 ? "unchanged" : (badgeUp > 0 ? "+" : "") + badgeUp) + savedNote;
+			int max = parseMax(L.meta(id));
+			switch (expect) {
+				case "ERROR" -> {
+					if (match) {
+						row.result(DvsRow.PASS, actual);
+					} else {
+						suiteBug(row, id, value, "Invalid value accepted: " + id + " = '" + abbreviate(value) + "' (expected an error"
+								+ (contains.isEmpty() ? "" : " containing '" + contains + "'") + ")", actual);
+					}
+				}
+				case "OK" -> {
+					if (!msgs.isEmpty() || badgeUp > 0) {
+						suiteBug(row, id, value, "Valid value rejected: " + id + " = '" + abbreviate(value) + "'", actual);
+					} else if (!value.isEmpty() && !"dropdown".equals(kind) && !DvsFieldActions.sameValue(kind, value, typed)) {
+						fail(row, "Value changed after entry (typed '" + abbreviate(value) + "', field shows '" + abbreviate(typed) + "') | " + actual);
+					} else {
+						row.result(DvsRow.PASS, actual);
+					}
+				}
+				case "LIMIT" -> {
+					if (max > 0 && typed.length() <= max) {
+						row.result(DvsRow.PASS, actual + " | field limited to " + max + " characters (entered " + value.length() + ")");
+					} else if (!msgs.isEmpty()) {
+						row.result(DvsRow.PASS, actual);
+					} else {
+						suiteBug(row, id, value, "Over-length value kept: " + typed.length() + " characters in " + id + " (max " + max + ")", actual);
+					}
+				}
+				default -> row.result(DvsRow.CAPTURED, actual + " (behaviour recorded - review)");
+			}
+			DvsStepLog.step("suite-row").field(id).before(before).entered(abbreviate(value)).after(abbreviate(typed))
+					.expected(expect + (contains.isEmpty() ? "" : " " + contains)).actual(actual).inline(inline)
+					.toast(submitToast).dialog(oneLine(dialog)).shot(shot)
+					.result(DvsRow.FAIL.equals(row.status()) ? DvsStepLog.FAIL : DvsStepLog.PASS).log();
+		} catch (RunAbort e) {
+			throw e;
+		} catch (WebDriverException e) {
+			if (sessionGone(e)) {
+				throw new RunAbort("Browser session lost: " + firstLine(e), e);
+			}
+			fail(row, "Exception: " + firstLine(e));
+		} catch (RuntimeException e) {
+			fail(row, "Exception: " + firstLine(e));
+		}
+		verdictStep(row);
+	}
+
+	private void suiteBug(DvsRow row, String id, String value, String detail, String actual) {
+		fail(row, "BUG - " + detail + " | " + actual);
+		DvsFindings.add(DvsFindings.BUG, row.tcId(), customerId, row.get("Tab"), id, detail, row.screenshot());
+	}
+
+	/** The Submit went through although the scenario value should not be accepted on this record: send it back to Maker. */
+	private void suiteSubmitted(DvsRow row, String id, String value, String toast) {
+		String detail = "Record submitted to Checker with " + id + " = '" + abbreviate(value) + "'";
+		row.result(DvsRow.FAIL, "BUG - " + detail + " | Toast: " + toast);
+		DvsFindings.add(DvsFindings.BUG, row.tcId(), customerId, row.get("Tab"), id, detail, row.screenshot());
+		if (!DvsCheckerFlow.enabled()) {
+			customerBlocked = true;
+			blockedReason = "Record " + customerId + " was submitted to Checker and not reverted (checker.recovery=OFF)";
+			return;
+		}
+		DvsCheckerFlow.Outcome out = DvsCheckerFlow.recover(row.tcId(), row.moduleCode(), customerId, id + "=" + value,
+				suiteMakerFull, lastPositive);
+		row.result(DvsRow.FAIL, row.actual() + " | recovery: reverted=" + out.reverted() + ", backInMaker=" + out.backInMaker());
+		if (!out.backInMaker()) {
+			customerBlocked = true;
+			blockedReason = "R3: " + customerId + " did not return to the Maker queue after revert";
+		}
+		touched.add(id);
+	}
+
+	private static int parseMax(DvsLocators.Meta m) {
+		try {
+			return m == null ? 0 : Integer.parseInt(m.maxLen().trim());
+		} catch (NumberFormatException e) {
+			return 0;
+		}
+	}
+
+	private static String abbreviate(String s) {
+		return s == null ? "" : s.length() <= 60 ? s : s.substring(0, 57) + "...(" + s.length() + " chars)";
+	}
+
+	/** Row with values from DVS_TypedValues.properties: earlier pairs are set first, the last pair is the judged field. */
+	private void executeTyped(DvsRow row, List<DvsTypedValues.Pair> pairs) {
+		for (DvsTypedValues.Pair p : pairs) {
+			if (!L.has(p.locatorId())) {
+				row.result(DvsRow.NOT_RUN, "DVS_TypedValues.properties points to unknown locator " + p.locatorId());
+				return;
+			}
+		}
+		DvsTypedValues.Pair main = pairs.get(pairs.size() - 1);
+		row.locatorId(main.locatorId());
+		String value = token(main.value());
+		if (dryRun) {
+			row.result(DvsRow.PLANNED, "would set " + pairs.stream().map(p -> p.locatorId() + " = '" + p.value() + "'")
+					.collect(java.util.stream.Collectors.joining(", ")) + " [typed value from DVS_TypedValues]" + flags(row));
+			return;
+		}
+		try {
+			for (DvsTypedValues.Pair p : pairs.subList(0, pairs.size() - 1)) {
+				touched.add(p.locatorId());
+				DvsFieldActions.set(p.locatorId(), token(p.value()));
+				DvsFieldActions.blur(p.locatorId());
+			}
+			runLiteral(row, main.locatorId(), value);
 		} catch (RunAbort e) {
 			throw e;
 		} catch (WebDriverException e) {
@@ -352,7 +608,8 @@ public final class DvsRowExecutor {
 			}
 			DvsNavigation.save();
 			String toast = DvsFieldActions.toastText();
-			DvsNavigation.reloadAndReopen(row.moduleCode(), row.customerId().isEmpty() ? customerId : row.customerId());
+			// always the customer this run opened (config) - the workbook row id can belong to another persona
+			DvsNavigation.reloadAndReopen(row.moduleCode(), customerId);
 			DvsFieldActions.openTab(tab);
 			StringBuilder diff = new StringBuilder();
 			for (Map.Entry<String, String> e : before.entrySet()) {

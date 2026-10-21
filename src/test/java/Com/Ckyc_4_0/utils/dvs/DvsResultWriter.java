@@ -26,7 +26,7 @@ import java.util.TreeMap;
 /** Every run writes its own new workbook (never overwrites): Summary, Results, Failed, Unmapped, Step_Log, Bugs. */
 public final class DvsResultWriter {
 
-	private static final String[] STATUSES = { DvsRow.PASS, DvsRow.FAIL, DvsRow.BLOCKED, DvsRow.CAPTURED, DvsRow.PLANNED, DvsRow.NOT_RUN };
+	private static final String[] STATUSES = { DvsRow.PASS, DvsRow.FAIL, DvsRow.BLOCKED, DvsRow.CAPTURED, DvsRow.PLANNED, DvsRow.SKIPPED, DvsRow.NOT_RUN };
 
 	private DvsResultWriter() {
 	}

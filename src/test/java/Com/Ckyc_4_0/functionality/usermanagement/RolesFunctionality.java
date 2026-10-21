@@ -23,7 +23,7 @@ import Com.Ckyc_4_0.utils.MasterUiHelper;
 import Com.Ckyc_4_0.utils.StepLog;
 import Com.Ckyc_4_0.utils.ToastHandler;
 
-/** Role Maker/Checker. Never touch Super Admin. Same-role Checker must fail; shyam is independent Checker. */
+/** Role Maker/Checker. Never touch Super Admin. Same-role Checker must fail; the independent Checker comes from user-management.properties. */
 public class RolesFunctionality extends BaseClass {
 	private final int waitSeconds = ConfigReader.getExplicitWait();
 
@@ -78,7 +78,14 @@ public class RolesFunctionality extends BaseClass {
 		}
 		closePanel();
 		MasterUiHelper.sleep(400);
-		boolean queued = isQueued(toast) || pageContainsRoleCard(role);
+		boolean inMyRequests = false;
+		for (int i = 0; i < 12 && !inMyRequests; i++) {
+			inMyRequests = !getDriver().findElements(RolesPage.myRequestPending(role)).isEmpty();
+			if (!inMyRequests) {
+				MasterUiHelper.sleep(500);
+			}
+		}
+		boolean queued = inMyRequests || isQueued(toast);
 		UserManagementStore.setRoleName(role);
 		UserManagementStore.setRoleCode(code);
 		if (queued) {
@@ -175,6 +182,76 @@ public class RolesFunctionality extends BaseClass {
 		ensureMakerOnRoles();
 	}
 
+	/** Module whose permission the demo flow enables on the TEST AUTO role (View/Add/Edit/Download chips). */
+	private static final String PERMISSION_MODULE = "Dashboard";
+
+	/**
+	 * Finds the dialog row that starts with the module name and holds exactly one checkbox. wanted=null just reads the
+	 * state; true/false clicks only when the state differs. Returns the checkbox state after the call.
+	 */
+	private static final String MODULE_CHECKBOX_JS =
+			"var module=arguments[0],wanted=arguments[1];"
+					+ "var dlg=document.querySelector('[role=dialog]')||document;"
+					+ "var boxes=dlg.querySelectorAll('input[type=checkbox]');"
+					+ "for(var i=0;i<boxes.length;i++){var cb=boxes[i];var row=cb.parentElement;"
+					+ "for(var k=0;k<5&&row;k++){var t=(row.innerText||'').trim();"
+					+ "if(t.toLowerCase().indexOf(module.toLowerCase())===0&&row.querySelectorAll('input[type=checkbox]').length===1){"
+					+ "if(wanted!==null&&cb.checked!==wanted){cb.click();}return cb.checked;}"
+					+ "row=row.parentElement;}}"
+					+ "return false;";
+
+	/**
+	 * Opens Configure Permissions of the TEST AUTO role. Returns false (and closes the dialog) when the dialog that opened
+	 * is not for this role - a permission change must never be made on another role.
+	 */
+	private boolean openPermissionsOf(String role, String step) {
+		ensureMakerOnRoles();
+		closePanel();
+		if (getDriver().findElements(RolesPage.configureFor(role)).isEmpty()) {
+			StepLog.check("Roles | " + step, "Open Configure Permissions on TEST AUTO role",
+					"Permissions action exists on the TEST AUTO card (never Super Admin)",
+					"FAIL | Configure Permissions not found for " + role + ". Super Admin / other roles were not used.",
+					false, "role=" + role);
+			return false;
+		}
+		MasterUiHelper.clickJs(RolesPage.configureFor(role), waitSeconds);
+		MasterUiHelper.sleep(600);
+		String title = "";
+		try {
+			title = PomElementManager.findVisible(RolesPage.PERMISSION_DIALOG, waitSeconds).getText();
+		} catch (RuntimeException ignored) {
+			// handled below
+		}
+		boolean ours = title != null && title.toLowerCase().contains(role.toLowerCase());
+		if (!ours) {
+			StepLog.check("Roles | " + step, "Permissions dialog opens for the TEST AUTO role only",
+					"Dialog title names " + role,
+					"FAIL | dialog title='" + firstLine(title) + "' - closed without any change", false, "role=" + role);
+			cancelPermissionDialog();
+			return false;
+		}
+		return true;
+	}
+
+	private static String firstLine(String text) {
+		if (text == null) {
+			return "";
+		}
+		int i = text.indexOf('\n');
+		return (i > 0 ? text.substring(0, i) : text).trim();
+	}
+
+	private void cancelPermissionDialog() {
+		By cancel = By.xpath("//*[@role='dialog']//button[normalize-space()='Cancel']");
+		if (!getDriver().findElements(cancel).isEmpty()) {
+			MasterUiHelper.clickJs(cancel, waitSeconds);
+			MasterUiHelper.sleep(300);
+		} else {
+			closePanel();
+		}
+	}
+
+	/** Read-only check: ticking a child module also ticks its parent. Nothing is saved. */
 	public void inspectPermissionParentChildRule() {
 		String role = UserManagementStore.roleName();
 		if (role == null) {
@@ -183,28 +260,167 @@ public class RolesFunctionality extends BaseClass {
 					"FAIL | No TEST AUTO role was created in this run", false, "neverTarget=Super Admin");
 			return;
 		}
-		ensureMakerOnRoles();
-		if (getDriver().findElements(RolesPage.configureFor(role)).isEmpty()) {
-			StepLog.check("Roles | Permissions parent/child", "Open Configure Permissions on TEST AUTO role",
-					"Permissions action exists on TEST AUTO card (never Super Admin)",
-					"FAIL | Configure Permissions not found for " + role
-							+ ". Super Admin was not used.",
-					false, "role=" + role);
+		if (!openPermissionsOf(role, "Permissions parent/child")) {
 			return;
 		}
-		MasterUiHelper.clickJs(RolesPage.configureFor(role), waitSeconds);
-		MasterUiHelper.sleep(500);
 		Hooks.captureMilestone("Roles permissions dialog | " + role);
 		boolean parentChild = verifyParentFollowsChild();
 		StepLog.check("Roles | Permissions parent/child",
 				"Selecting a child module also checks the parent module",
 				"Parent is checked when child is selected on TEST AUTO role",
 				"role=" + role + " parentFollowsChild=" + parentChild, parentChild, "role=" + role);
-		if (!getDriver().findElements(RolesPage.SAVE_PERMISSIONS).isEmpty()) {
-			MasterUiHelper.clickJs(RolesPage.SAVE_PERMISSIONS, waitSeconds);
-			ToastHandler.waitAndRead(getDriver(), 2500);
+		cancelPermissionDialog();
+	}
+
+	/**
+	 * Maker enables one module (checkbox) on the TEST AUTO role and saves; the change goes to the Checker queue as a
+	 * request. Nothing is saved on any other role.
+	 */
+	public void enablePermissionOnRole() {
+		String role = requireRole("Enable permission");
+		if (role == null) {
+			return;
 		}
+		if (!openPermissionsOf(role, "Enable permission")) {
+			return;
+		}
+		boolean ticked = setModuleCheckbox(PERMISSION_MODULE, true);
+		MasterUiHelper.sleep(400);
+		String granted = readPermissionsGranted();
+		Hooks.captureMilestone("Roles permission ticked | " + role + " | " + PERMISSION_MODULE);
+		if (!ticked) {
+			StepLog.check("Roles | Enable permission", "Tick the " + PERMISSION_MODULE + " module checkbox",
+					"Checkbox is ticked and Save Permissions becomes enabled",
+					"FAIL | module checkbox for " + PERMISSION_MODULE + " not found/ticked", false, "role=" + role);
+			cancelPermissionDialog();
+			return;
+		}
+		boolean saveEnabled = false;
+		List<WebElement> save = getDriver().findElements(RolesPage.SAVE_PERMISSIONS);
+		if (!save.isEmpty()) {
+			saveEnabled = save.get(0).isEnabled() && !"true".equals(save.get(0).getAttribute("aria-disabled"));
+		}
+		if (saveEnabled) {
+			MasterUiHelper.clickJs(RolesPage.SAVE_PERMISSIONS, waitSeconds);
+			MasterUiHelper.sleep(500);
+			confirmIfPresent();
+		}
+		String toast = ToastHandler.waitAndRead(getDriver(), 3500);
 		closePanel();
+		boolean inMyRequests = false;
+		for (int i = 0; i < 8 && !inMyRequests; i++) {
+			inMyRequests = !getDriver().findElements(RolesPage.myRequestPending(role)).isEmpty();
+			if (!inMyRequests) {
+				MasterUiHelper.sleep(500);
+			}
+		}
+		boolean queued = saveEnabled && (inMyRequests || isQueued(toast));
+		if (queued) {
+			UserManagementStore.setLastPendingAction("ROLE_PERMISSION");
+		}
+		StepLog.check("Roles | Enable permission",
+				"Tick the " + PERMISSION_MODULE + " module on the TEST AUTO role and Save Permissions",
+				"Permission change is submitted to the Checker queue",
+				"role=" + role + " module=" + PERMISSION_MODULE + " ticked=" + ticked + " " + granted
+						+ " saveEnabled=" + saveEnabled + " toast='" + toast + "' inMyRequestsPending=" + inMyRequests,
+				queued, "role=" + role + "; module=" + PERMISSION_MODULE);
+		Hooks.captureMilestone("Roles permission submitted | " + role);
+	}
+
+	public void independentCheckerApprovesPermissionRequest() {
+		String role = requireRole("Checker approves permission");
+		if (role == null) {
+			return;
+		}
+		if (!"ROLE_PERMISSION".equals(UserManagementStore.lastPendingAction())) {
+			StepLog.check("Roles | Checker approves permission", "Approve the pending permission request",
+					"A permission request is pending for " + role,
+					"FAIL | Prerequisite permission request was not submitted. last="
+							+ UserManagementStore.lastPendingAction(),
+					false, "role=" + role);
+			return;
+		}
+		String checker = UserManagementAccounts.primaryChecker();
+		boolean approved = approvePendingAs(role, checker);
+		if (!approved) {
+			String branch = UserManagementAccounts.branchChecker();
+			if (!branch.equalsIgnoreCase(checker)) {
+				approved = approvePendingAs(role, branch);
+				if (approved) {
+					checker = branch;
+				}
+			}
+		}
+		if (approved) {
+			UserManagementStore.setLastReviewedBy(checker);
+			UserManagementStore.setLastReviewDecision("APPROVED");
+		}
+		StepLog.check("Roles | Checker approves permission",
+				"Different-role Checker approves the TEST AUTO role permission request",
+				"Approval succeeds and the request is no longer pending",
+				"role=" + role + " checker=" + checker + " approved=" + approved, approved,
+				"checker=" + checker + "; role=" + role);
+		UserManagementSession.restoreMaker();
+		ensureMakerOnRoles();
+	}
+
+	/** Re-opens the role's permissions as Maker and proves the approved module checkbox is really saved. */
+	public void verifyPermissionSaved() {
+		String role = requireRole("Verify permission saved");
+		if (role == null) {
+			return;
+		}
+		if (!openPermissionsOf(role, "Permission saved")) {
+			return;
+		}
+		boolean checked = isModuleChecked(PERMISSION_MODULE);
+		String granted = readPermissionsGranted();
+		Hooks.captureMilestone("Roles permission after approval | " + role);
+		StepLog.check("Roles | Permission saved",
+				"Re-open Configure Permissions on the TEST AUTO role after Checker approval",
+				PERMISSION_MODULE + " is ticked after approval",
+				"role=" + role + " " + PERMISSION_MODULE + "Ticked=" + checked + " " + granted, checked,
+				"role=" + role + "; module=" + PERMISSION_MODULE);
+		cancelPermissionDialog();
+	}
+
+	private boolean approvePendingAs(String role, String checker) {
+		UserManagementSession.loginAs(checker, UserManagementAccounts.passwordFor(checker));
+		if (!UserManagementSession.openRolesOrFail(checker)) {
+			return false;
+		}
+		openCheckerQueue();
+		ensureRoleVisibleInCheckerQueue(role, true);
+		if (!hasPendingRoleActions(role)) {
+			StepLog.check("Roles | Checker queue | " + checker, "Pending TEST AUTO role request is in Checker queue",
+					"Pending request for " + role + " is visible",
+					"FAIL | No pending role request found for " + role + " | signedIn="
+							+ UserManagementSession.signedInLabel(), false, "checker=" + checker + "; role=" + role);
+			return false;
+		}
+		Hooks.captureMilestone("Roles Checker pending before approval | " + checker + " | " + role);
+		boolean approved = attemptApprove(role, checker, false);
+		Hooks.captureMilestone("Roles Checker after approval | " + checker + " | " + role);
+		return approved;
+	}
+
+	/** Ticks/unticks the checkbox of one module row of the open permissions dialog; returns its state afterwards. */
+	private boolean setModuleCheckbox(String module, boolean wanted) {
+		return Boolean.TRUE.equals(((JavascriptExecutor) getDriver()).executeScript(MODULE_CHECKBOX_JS, module, wanted));
+	}
+
+	private boolean isModuleChecked(String module) {
+		return Boolean.TRUE.equals(((JavascriptExecutor) getDriver()).executeScript(MODULE_CHECKBOX_JS, module, null));
+	}
+
+	private String readPermissionsGranted() {
+		try {
+			Object o = ((JavascriptExecutor) getDriver()).executeScript(
+					"var m=(document.body.innerText||'').match(/(\\d+)\\s+permissions?\\s+granted/i);return m?m[0]:'';");
+			return "granted='" + (o == null ? "" : o) + "'";
+		} catch (RuntimeException e) {
+			return "granted=''";
+		}
 	}
 
 	public void restoreMakerForNextModule() {
@@ -305,7 +521,8 @@ public class RolesFunctionality extends BaseClass {
 
 	private void ensureMakerOnRoles() {
 		UserManagementSession.restoreMaker();
-		getDriver().get(ConfigReader.getUrl() + "/admin/roles");
+		// nav bar first (User Management > Roles); the endpoint only if the nav item is not there
+		UserManagementSession.openRolesNavFirst();
 		PomElementManager.findVisible(RolesPage.PAGE_HEADING, waitSeconds);
 		clickMaker();
 	}
@@ -430,6 +647,16 @@ public class RolesFunctionality extends BaseClass {
 
 	private void confirmIfPresent() {
 		MasterUiHelper.sleep(250);
+		try {
+			List<WebElement> remarks = getDriver().findElements(Com.Ckyc_4_0.pages.usermanagement.UsersPage.DIALOG_REMARKS);
+			if (!remarks.isEmpty() && remarks.get(0).isDisplayed()
+					&& (remarks.get(0).getAttribute("value") == null || remarks.get(0).getAttribute("value").isBlank())) {
+				MasterUiHelper.typeInto(Com.Ckyc_4_0.pages.usermanagement.UsersPage.DIALOG_REMARKS,
+						"TEST AUTO remarks - automation", waitSeconds);
+			}
+		} catch (RuntimeException ignored) {
+			// no remarks box in this dialog
+		}
 		if (!getDriver().findElements(RolesPage.CONFIRM).isEmpty()) {
 			MasterUiHelper.clickJs(RolesPage.CONFIRM, waitSeconds);
 		}
@@ -449,6 +676,9 @@ public class RolesFunctionality extends BaseClass {
 
 	private boolean isQueued(String toast) {
 		String value = toast == null ? "" : toast.toLowerCase();
+		if (value.contains("unsuccess") || value.contains("fail") || value.contains("error") || value.contains("already")) {
+			return false;
+		}
 		return value.contains("success") || value.contains("submitted") || value.contains("pending")
 				|| value.contains("checker");
 	}

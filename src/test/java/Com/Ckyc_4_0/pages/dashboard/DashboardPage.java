@@ -130,8 +130,9 @@ public final class DashboardPage {
 	}
 
 	/**
-	 * These sub-items navigate to another page (not a report modal).
-	 * Synced to Dashboard HTML — read count only, no click.
+	 * NOT USED any more - kept only for reference. The sub-cards that open another page are matched by their NAME in
+	 * {@code DashboardLive.NAVIGATION_LABELS} (Image Scan / Upload Queue, DVS Queue, Confirm Match Audit Queue,
+	 * Probable match pending in FI): codes shift whenever the dashboard gains a sub-card.
 	 */
 	public static final Set<String> COUNT_ONLY_NAVIGATION_ITEMS = Set.of(
 			"B4", // Image Availablitity Queue

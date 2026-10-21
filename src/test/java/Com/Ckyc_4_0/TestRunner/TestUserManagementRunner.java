@@ -34,11 +34,14 @@ import io.cucumber.testng.CucumberOptions;
 				"io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm" },
 		tags = "@UserManagement",
 		monochrome = true, dryRun = false, publish = false)
-public class TestUserManagementRunner extends AbstractTestNGCucumberTests {
+public class TestUserManagementRunner extends CkycCucumberTests {
+
+	/** true = record the browser window of THIS runner from the moment it opens (default off; the Test Control Panel toggle overrides). */
+	private static final boolean RECORD_SCREEN = false;
 	@BeforeSuite(alwaysRun = true)
 	public void setUpSuite() {
 		RunnerSuiteSupport.beforeSuite("TestUserManagementRunner",
-				"Login → Roles Positive → Users Positive → Roles Negative → Users Negative");
+				"Login → Roles Positive → Users Positive → Roles Negative → Users Negative", RECORD_SCREEN);
 	}
 	@AfterSuite(alwaysRun = true)
 	public void tearDownSuite() {

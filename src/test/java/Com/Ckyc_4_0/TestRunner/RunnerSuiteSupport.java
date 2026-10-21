@@ -123,6 +123,14 @@ final class RunnerSuiteSupport {
 	}
 
 	static void beforeSuite(String runnerName, String modulesDescription) {
+		beforeSuite(runnerName, modulesDescription, false);
+	}
+
+	/**
+	 * @param recordScreen the runner class's RECORD_SCREEN constant: true = record the browser from the moment it is
+	 *                     open (also switched on by recording.enabled=true; the Test Control Panel toggle overrides both)
+	 */
+	static void beforeSuite(String runnerName, String modulesDescription, boolean recordScreen) {
 		try {
 			ReportNamingHelper.initializeRun(runnerName);
 			String allureDir = ReportNamingHelper.allureResultsPath();
@@ -138,9 +146,19 @@ final class RunnerSuiteSupport {
 			ExtentReportManager.getReporter();
 			logger.info("Browser launched | Password Manager disabled via DriverFactory");
 			ExecutionLogger.info("Browser launched successfully");
+			if (Com.Ckyc_4_0.utils.recording.RunRecording.requestedByRunnerOrConfig(recordScreen)) {
+				Com.Ckyc_4_0.utils.recording.RunRecording.start(runnerName);
+			}
+			// the browser is on the login page: the Test Control Panel asks what to test (pre-ticked for this runner)
+			if (Boolean.parseBoolean(Com.Ckyc_4_0.UtilityFiles.ConfigReader.get("controlPanel.onRunners", "true"))) {
+				Com.Ckyc_4_0.utils.panel.ControlPanel.chooseAndApply(runnerName);
+			}
 		} catch (Exception e) {
 			logger.error("Suite initialization failed: {}", e.getMessage(), e);
 			ExecutionLogger.exception("Suite initialization failed", e);
+		} finally {
+			// the real test execution starts now (the time spent in the Test Control Panel is not test time)
+			ReportNamingHelper.markExecutionStart();
 		}
 	}
 

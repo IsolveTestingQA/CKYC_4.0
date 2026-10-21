@@ -116,6 +116,7 @@ public class Hooks extends BaseClass {
 		HooksHolder.scenarioName = attempt > 1 ? scenario.getName() + " [Attempt " + attempt + "]" : scenario.getName();
 
 		HooksHolder.featureName = getFeatureName(scenario);
+		Com.Ckyc_4_0.utils.FailureContext.setScenario(HooksHolder.featureName, HooksHolder.scenarioName);
 
 		if (SoftAssertManager.shouldAbortRun()) {
 			throw new SkipException("Run aborted: " + SoftAssertManager.abortReason());
@@ -130,8 +131,17 @@ public class Hooks extends BaseClass {
 			UserManagementStore.clear();
 		}
 
-		ExtentReportManager.startTest(HooksHolder.scenarioName, HooksHolder.featureName);
+		ExtentReportManager.startTest(HooksHolder.scenarioName, HooksHolder.featureName, String.valueOf(scenario.getUri()),
+				new java.util.ArrayList<>(scenario.getSourceTagNames()));
+		try {
+			Com.Ckyc_4_0.UtilityFiles.AdvancedRunReport.get().startScenario(HooksHolder.featureName,
+					HooksHolder.scenarioName, new java.util.ArrayList<>(scenario.getSourceTagNames()),
+					String.valueOf(scenario.getUri()));
+		} catch (RuntimeException e) {
+			logger.debug("Advanced report start skipped: {}", e.getMessage());
+		}
 
+		Com.Ckyc_4_0.utils.ScenarioProgress.start(HooksHolder.scenarioName, scenario.getUri(), scenario.getLine());
 		logger.info("=== Starting Scenario: {} ({}) ===", HooksHolder.scenarioName, HooksHolder.featureName);
 		ExecutionLogger.info("=== Starting Scenario: " + HooksHolder.scenarioName
 				+ " (" + HooksHolder.featureName + ") ===");
@@ -159,6 +169,7 @@ public class Hooks extends BaseClass {
 	public void beforeStep() {
 
 		HooksHolder.stepStartTime = System.currentTimeMillis();
+		Com.Ckyc_4_0.utils.ScenarioProgress.stepStarting(getDriver());
 
 	}
 
@@ -220,6 +231,24 @@ public class Hooks extends BaseClass {
 				ExtentReportManager.logPass("Scenario passed: " + scenario.getName());
 			}
 
+			if (("Failed".equals(status)) && Com.Ckyc_4_0.utils.panel.RunSelection.stopOnFirstFailure()) {
+				SoftAssertManager.markAbortRun("Stopped at the first failed scenario (Test Control Panel option): "
+						+ scenario.getName());
+			}
+			try {
+				ExtentReportManager.endTest(status,
+						"Failed".equals(status) ? "One or more steps failed"
+								: ("Skipped".equals(status) || "Aborted".equals(status)) ? SoftAssertManager.skipReason() : "");
+			} catch (RuntimeException e) {
+				logger.debug("Extent end-of-scenario skipped: {}", e.getMessage());
+			}
+			try {
+				Com.Ckyc_4_0.UtilityFiles.AdvancedRunReport.get().endScenario(status,
+						"Failed".equals(status) ? "One or more steps failed"
+								: ("Skipped".equals(status) || "Aborted".equals(status)) ? SoftAssertManager.skipReason() : "");
+			} catch (RuntimeException e) {
+				logger.debug("Advanced report end skipped: {}", e.getMessage());
+			}
 			reporter.logStep(HooksHolder.featureName, HooksHolder.scenarioName, "Scenario Summary",
 					"All steps executed", status, status, HooksHolder.stepStartTime,
 					"Failed".equals(status) ? "One or more steps failed"
@@ -236,6 +265,7 @@ public class Hooks extends BaseClass {
 				ExecutionLogger.pass("Scenario passed: " + scenario.getName());
 			}
 			currentScenario.remove();
+				Com.Ckyc_4_0.utils.ScenarioProgress.end();
 		}
 
 	}
@@ -268,6 +298,8 @@ public class Hooks extends BaseClass {
 	public static void runStep(String stepDescription, String expected, Runnable action,
 			boolean captureOnSuccess, boolean mandatory) {
 		HooksHolder.currentStepDescription = stepDescription;
+		Com.Ckyc_4_0.utils.FailureContext.setRunContext(HooksHolder.featureName, HooksHolder.scenarioName,
+				stepDescription, expected);
 		Scenario scenario = currentScenario.get();
 		ExecutionLogger.info("STEP START | " + stepDescription + " | Expected: " + expected
 				+ (mandatory ? " | mandatory=true" : ""));
@@ -313,6 +345,13 @@ public class Hooks extends BaseClass {
 			}
 			String reason = blocker.module() + " positive creation blocked | "
 					+ blocker.getMessage() + " | TestData: " + blocker.testData();
+			if (choice == BlockerChoice.STOP) {
+				handleAbortAndStop(new AbortRunException("Stopped by user: " + reason));
+			}
+			if (choice == BlockerChoice.SKIP_SCENARIO) {
+				SoftAssertManager.markSkipScenario(reason);
+				throw new SkipException("Case skipped: " + reason);
+			}
 			SoftAssertManager.markSkipFeature(HooksHolder.featureName, reason);
 			throw new SkipException("Stop module: " + reason);
 		} catch (Throwable t) {
@@ -362,14 +401,30 @@ public class Hooks extends BaseClass {
 							+ (working.getMessage() != null ? working.getMessage() : working.toString());
 					BlockerChoice choice = PopupHandler.promptMissingExpectedUi(
 							getDriver(),
-							unexpectedPage ? "Server error / unexpected page — " + stepDescription : stepDescription,
-							details);
-					PopupHandler.applyMissingUiChoice(choice, HooksHolder.featureName, stepDescription);
-					if (choice == BlockerChoice.CONTINUE_WAIT) {
-						PopupHandler.runWithBlockerRetry(getDriver(), action);
-						markStepPassed(stepDescription, expected, captureOnSuccess, scenario);
-						ExecutionLogger.pass(stepDescription + " | recovered after Continue");
-						return;
+							unexpectedPage ? "Server error / unexpected page - " + stepDescription : stepDescription,
+							details, working);
+					// Continue = run the same step again (max 2 tries; then it is closed as a bug with screenshot)
+					for (int attempt = 1; attempt <= 2; attempt++) {
+						PopupHandler.applyMissingUiChoice(choice, HooksHolder.featureName, stepDescription);
+						if (choice != BlockerChoice.CONTINUE_WAIT) {
+							break;
+						}
+						try {
+							PopupHandler.runWithBlockerRetry(getDriver(), action);
+							markStepPassed(stepDescription, expected, captureOnSuccess, scenario);
+							ExecutionLogger.pass(stepDescription + " | recovered after Continue");
+							return;
+						} catch (AbortRunException abortAgain) {
+							throw abortAgain;
+						} catch (Throwable again) {
+							working = again;
+							if (attempt == 2 || !PopupHandler.looksLikeMissingExpectedUi(again)) {
+								break;
+							}
+							choice = PopupHandler.promptMissingExpectedUi(getDriver(), stepDescription,
+									"Still not available after Continue (try " + attempt + " of 2). Expected: " + expected,
+									again);
+						}
 					}
 					if (choice == BlockerChoice.SKIP_SCENARIO || choice == BlockerChoice.SKIP_FEATURE) {
 						ExecutionLogger.warn(choice + ": " + stepDescription);
@@ -576,6 +631,13 @@ public class Hooks extends BaseClass {
 
 	public static void shutdown() {
 
+		// completion toast + final screenshot in the browser, then the screen recording is finished
+		try {
+			Com.Ckyc_4_0.utils.recording.RunFinale.completeRun();
+		} catch (RuntimeException e) {
+			logger.warn("Completion step skipped: {}", e.getMessage());
+		}
+
 		String totalTimeTaken = Com.Ckyc_4_0.UtilityFiles.ReportNamingHelper.elapsedFormatted();
 
 		ExtentReportManager.setTotalDuration(totalTimeTaken);
@@ -592,6 +654,12 @@ public class Hooks extends BaseClass {
 
 		// Open reports BEFORE quitting the browser, and guard the quit — an already-dead/crashed
 		// session throwing out of driver.quit() must never silently skip opening the reports.
+		Com.Ckyc_4_0.UtilityFiles.AdvancedRunReport.get().write();
+		try {
+			Com.Ckyc_4_0.utils.recording.RunFinale.printSummary();
+		} catch (RuntimeException e) {
+			logger.warn("Run summary skipped: {}", e.getMessage());
+		}
 		Com.Ckyc_4_0.UtilityFiles.ReportOpener.openReportsIfConfigured();
 
 		try {

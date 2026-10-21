@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reports vs Dashboard - Weekly comparison</title>
+<style>
+:root{--bg:#f6f8fa;--card:#fff;--line:#d0d7de;--ink:#1f2328;--mute:#656d76;--accent:#0969da;
+--pass:#1a7f37;--passbg:#dafbe1;--fail:#cf222e;--failbg:#ffebe9;--ne:#9a6700;--nebg:#fff8c5;--st:#57606a;--stbg:#eaeef2;}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--card:#161b22;--line:#30363d;--ink:#e6edf3;--mute:#8b949e;--accent:#58a6ff;
+--pass:#3fb950;--passbg:#12261e;--fail:#ff7b72;--failbg:#2d1214;--ne:#d29922;--nebg:#2a2208;--st:#8b949e;--stbg:#21262d;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+header{padding:20px 28px 8px}
+h1{margin:0;font-size:22px}
+.sub{color:var(--mute);margin-top:4px}
+.wrap{padding:0 28px 40px;max-width:1500px;margin:0 auto}
+.kpis{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:140px}
+.kpi b{display:block;font-size:26px;line-height:1.1}
+.kpi span{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.kpi.pass b{color:var(--pass)}.kpi.fail b{color:var(--fail)}.kpi.ne b{color:var(--ne)}.kpi.st b{color:var(--st)}
+.banner{background:var(--failbg);border:1px solid var(--fail);color:var(--fail);border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:600}
+h2{font-size:16px;margin:26px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.matrix{overflow:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;background:var(--bg);position:sticky;top:0}
+.matrix td.c{text-align:center;min-width:128px}
+.matrix tr.grp td{background:var(--bg);font-weight:700;color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.PASS{background:var(--passbg);color:var(--pass)}.FAIL{background:var(--failbg);color:var(--fail)}
+.NE{background:var(--nebg);color:var(--ne)}.ST{background:var(--stbg);color:var(--st)}
+a.cell{text-decoration:none;display:inline-block}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar select,.bar input{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit}
+.bar input{min-width:240px}
+.combo{margin:18px 0 6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.combo .tag{background:var(--accent);color:#fff;border-radius:6px;padding:3px 10px;font-weight:700}
+.combo .tag.b{background:#6e40c9}
+.combo small{color:var(--mute)}
+.case{margin:8px 0;overflow:hidden}
+.case>summary{list-style:none;cursor:pointer;padding:10px 14px;display:grid;grid-template-columns:150px 1fr 150px;gap:12px;align-items:center}
+.case>summary::-webkit-details-marker{display:none}
+.case .id{font:12px ui-monospace,Consolas,monospace;color:var(--mute)}
+.case .name{font-weight:600}.case .name small{display:block;color:var(--mute);font-weight:400}
+.case .res{text-align:right}
+.body{padding:4px 14px 14px;border-top:1px solid var(--line)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
+.box{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.box h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:3px 8px}
+.kv span:nth-child(odd){color:var(--mute)}
+.hd{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.hd i{font-style:normal;background:var(--stbg);border-radius:4px;padding:1px 6px;font-size:12px}
+.hd i.x{background:var(--failbg);color:var(--fail);font-weight:600}
+.diff td{font-size:13px}.diff .k{font:12px ui-monospace,Consolas,monospace}
+.ev a{display:inline-block;margin:6px 10px 0 0;text-decoration:none;color:var(--accent)}
+.ev img{max-width:340px;border:1px solid var(--line);border-radius:6px;display:block}
+.focusmode #matrix,.focusmode #matrixH,.focusmode .kpis,.focusmode #coldiffsH,.focusmode #coldiffs,.focusmode #infoH,.focusmode #info{display:none}
+.empty{padding:22px;color:var(--mute);text-align:center}
+footer{color:var(--mute);padding:20px 28px}
+@media (max-width:900px){.cols{grid-template-columns:1fr}.case>summary{grid-template-columns:1fr}.case .res{text-align:left}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Reports vs Dashboard &mdash; Weekly comparison</h1>
+  <div class="sub" id="sub"></div>
+</header>
+<div class="wrap">
+  <div id="banner"></div>
+  <div class="kpis" id="kpis"></div>
+
+  <h2 id="matrixH">At a glance &mdash; every dashboard sub-card against every filter</h2>
+  <div class="card matrix" id="matrix"></div>
+
+  <h2>Cases</h2>
+  <div class="bar" id="bar"></div>
+  <div id="cases"></div>
+
+  <h2 id="coldiffsH">Columns that exist on one screen only</h2>
+  <div class="card" id="coldiffs"></div>
+
+  <h2 id="infoH">Run details</h2>
+  <div class="card" id="info"></div>
+</div>
+<footer id="foot"></footer>
+<script>
+var D = __DATA__;
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function cls(s){return s==='PASS'?'PASS':(s==='FAIL'||s==='BUG')?'FAIL':s==='NOT EXECUTED'?'NE':'ST';}
+function short(s){return s==='NOT EXECUTED'?'NOT EXECUTED':s;}
+var F={app:'',con:'',status:'',cat:'',q:''};
+
+document.getElementById('sub').textContent = D.generated + '  |  Applications: ' + D.apps.join(', ') +
+  '  |  Constitutions: ' + D.cons.join(', ') + '  |  Dashboard date filter: Weekly only  |  Tested by: '+(D.testedBy||'Aravindhan');
+
+(function kpis(){
+  var n={PASS:0,FAIL:0,BUG:0,'NOT EXECUTED':0,'STORED ONLY':0};
+  D.cases.forEach(function(c){n[c.status]=(n[c.status]||0)+1;});
+  var colDiff=0; D.cases.forEach(function(c){c.diffs.forEach(function(d){if(d.kind.indexOf('COLUMN-')===0)colDiff++;});});
+  var t=[['','Cases',D.cases.length],['pass','Pass',n.PASS],['fail','Fail',n.FAIL],['fail','Bug - report type missing',n.BUG],['ne','Not executed',n['NOT EXECUTED']],
+         ['st','Stored only',n['STORED ONLY']],['','Column differences',colDiff]];
+  document.getElementById('kpis').innerHTML=t.map(function(k){return '<div class="kpi '+k[0]+'"><b>'+k[2]+'</b><span>'+k[1]+'</span></div>';}).join('');
+  if(D.abort){document.getElementById('banner').innerHTML='<div class="banner">RUN STOPPED: '+esc(D.abort)+' &mdash; everything read before this point is shown; the rest was not executed.</div>';}
+})();
+
+(function matrix(){
+  var combos=D.combos; var rows=[]; var seen={};
+  D.cases.forEach(function(c){
+    var key=c.category+'|'+c.card;
+    if(!seen[key]){seen[key]={category:c.category,card:c.card,cells:{}};rows.push(seen[key]);}
+    seen[key].cells[c.app+'|'+c.con]=c;
+  });
+  var h='<table><thead><tr><th>Dashboard sub-card</th>'+combos.map(function(c){return '<th style="text-align:center">'+esc(c.app)+'<br>'+esc(c.con)+'</th>';}).join('')+'</tr></thead><tbody>';
+  var last='';
+  rows.forEach(function(r){
+    if(r.category!==last){h+='<tr class="grp"><td colspan="'+(combos.length+1)+'">'+esc(r.category||'(no category)')+'</td></tr>';last=r.category;}
+    h+='<tr><td>'+esc(r.card)+'</td>';
+    combos.forEach(function(cb){
+      var c=r.cells[cb.app+'|'+cb.con];
+      if(!c){h+='<td class="c">&ndash;</td>';return;}
+      var txt=c.status==='PASS'?(c.dashCount+' = '+c.repCount):c.status==='FAIL'?(c.dashCount+' vs '+c.repCount):c.status==='BUG'?'BUG - not in list':short(c.status);
+      h+='<td class="c"><a class="cell" href="#'+c.id+'" onclick="openCase(\''+c.id+'\')"><span class="chip '+cls(c.status)+'">'+esc(txt)+'</span></a></td>';
+    });
+    h+='</tr>';
+  });
+  document.getElementById('matrix').innerHTML=h+'</tbody></table>';
+})();
+
+(function bar(){
+  function opt(a,l){return '<option value="">'+l+'</option>'+a.map(function(x){return '<option>'+esc(x)+'</option>';}).join('');}
+  var cats=[];D.cases.forEach(function(c){if(c.category&&cats.indexOf(c.category)<0)cats.push(c.category);});
+  document.getElementById('bar').innerHTML=
+    '<select id="fApp">'+opt(D.apps,'All applications')+'</select>'+
+    '<select id="fCon">'+opt(D.cons,'All constitutions')+'</select>'+
+    '<select id="fSt">'+opt(['PASS','FAIL','BUG','NOT EXECUTED','STORED ONLY'],'All results')+'</select>'+
+    '<select id="fCat">'+opt(cats,'All categories')+'</select>'+
+    '<input id="fQ" placeholder="Search sub-card, report, customer id ...">';
+  ['fApp','fCon','fSt','fCat'].forEach(function(id){document.getElementById(id).onchange=function(){
+    F[{fApp:'app',fCon:'con',fSt:'status',fCat:'cat'}[id]]=this.value;renderCases();};});
+  document.getElementById('fQ').oninput=function(){F.q=this.value.toLowerCase();renderCases();};
+})();
+
+function box(title,side,c,other){
+  var count=side==='d'?c.dashCount:c.repCount, rows=side==='d'?c.dashRows:c.repRows, range=side==='d'?c.dashRange:c.repRange;
+  var heads=side==='d'?c.dashHeaders:c.repHeaders, ohead=side==='d'?c.repHeaders:c.dashHeaders;
+  var js=side==='d'?c.dashJson:c.repJson;
+  if(side==='r'&&c.repCount==='-'&&c.repRows==='-'){
+    return '<div class="box"><h4>'+title+'</h4><p style="margin:0"><b style="color:var(--fail)">Not found in the Reports module.</b><br>'+
+      'No report type for this dashboard sub-card is listed under the category &ldquo;'+esc(c.category)+'&rdquo; in the Report Type dropdown.</p></div>';
+  }
+  var h='<div class="box"><h4>'+title+'</h4><div class="kv">'+
+    '<span>Record count</span><span>'+esc(count)+'</span>'+
+    '<span>Rows read</span><span>'+esc(rows)+'</span>'+
+    '<span>Date range</span><span>'+esc(range||'-')+'</span>'+
+    '<span>Application</span><span>'+esc(c.app)+'</span>'+
+    '<span>Constitution</span><span>'+esc(c.con)+'</span>'+
+    '<span>Report</span><span>'+esc(side==='d'?c.dashReport:c.reportType)+'</span></div>';
+  if(heads&&heads.length){
+    h+='<div class="hd">'+heads.map(function(x){var miss=ohead&&ohead.length&&ohead.indexOf(x)<0;return '<i class="'+(miss?'x':'')+'">'+esc(x)+'</i>';}).join('')+'</div>';
+  }
+  if(js){h+='<div style="margin-top:8px"><a href="'+esc(js)+'">Open full data (JSON)</a></div>';}
+  return h+'</div>';
+}
+
+function caseHtml(c){
+  var open=(c.status==='FAIL'||c.status==='BUG')?' open':'';
+  var h='<details class="card case" id="'+c.id+'"'+open+'><summary>'+
+    '<span class="id">'+esc(c.id)+'</span>'+
+    '<span class="name">'+esc(c.card)+'<small>'+esc(c.category)+' &rarr; '+esc(c.reportType||'(no report type)')+'</small></span>'+
+    '<span class="res"><span class="chip '+cls(c.status)+'">'+esc(c.status)+'</span></span></summary><div class="body">'+
+    '<p>'+esc(c.summary)+'</p>'+
+    '<div class="cols">'+box('Dashboard popup &mdash; expected','d',c)+box('Reports module &mdash; actual','r',c)+'</div>';
+  if(c.notes&&c.notes.length){h+='<p style="color:var(--mute)">'+c.notes.map(esc).join('<br>')+'</p>';}
+  if(c.diffs&&c.diffs.length){
+    h+='<table class="diff"><thead><tr><th>Difference</th><th>Customer ID</th><th>Column</th><th>Dashboard (expected)</th><th>Reports module (actual)</th></tr></thead><tbody>'+
+      c.diffs.map(function(d){return '<tr><td class="k">'+esc(d.kind)+'</td><td>'+esc(d.customer)+'</td><td>'+esc(d.column)+'</td><td>'+esc(d.dashboard)+'</td><td>'+esc(d.report)+'</td></tr>';}).join('')+'</tbody></table>';
+  }
+  if(c.evidence&&c.evidence.length){
+    h+='<div class="ev">'+c.evidence.map(function(e){return '<a href="'+esc(e.href)+'" target="_blank"><span>'+esc(e.label)+'</span><img loading="lazy" src="'+esc(e.href)+'" alt=""></a>';}).join('')+'</div>';
+  }
+  return h+'</div></details>';
+}
+
+function renderCases(){
+  var list=D.cases.filter(function(c){
+    if(F.app&&c.app!==F.app)return false; if(F.con&&c.con!==F.con)return false;
+    if(F.status&&c.status!==F.status)return false; if(F.cat&&c.category!==F.cat)return false;
+    if(F.q){var hay=(c.id+' '+c.card+' '+c.category+' '+c.reportType+' '+c.summary+' '+c.diffs.map(function(d){return d.customer+' '+d.column;}).join(' ')).toLowerCase();
+      if(hay.indexOf(F.q)<0)return false;}
+    return true;});
+  if(!list.length){document.getElementById('cases').innerHTML='<div class="card empty">No case matches the filters.</div>';return;}
+  var out='',last='';
+  list.forEach(function(c){
+    var k=c.app+'|'+c.con;
+    if(k!==last){
+      var cb=D.combos.filter(function(x){return x.app===c.app&&x.con===c.con;})[0]||{};
+      out+='<div class="combo"><span class="tag">'+esc(c.app)+'</span><span class="tag b">'+esc(c.con)+'</span>'+
+        '<small>Dashboard: Weekly '+esc(cb.dashRange||'')+' &nbsp;|&nbsp; Reports module: '+esc(cb.repRange||'')+'</small></div>';
+      last=k;
+    }
+    out+=caseHtml(c);
+  });
+  document.getElementById('cases').innerHTML=out;
+}
+function openCase(id){F={app:'',con:'',status:'',cat:'',q:''};['fApp','fCon','fSt','fCat','fQ'].forEach(function(x){document.getElementById(x).value='';});
+  renderCases();var e=document.getElementById(id);if(e){e.open=true;e.scrollIntoView({block:'center'});}return true;}
+renderCases();
+var fq=location.search.match(/[?&]focus=([^&]+)/);
+if(fq){document.body.classList.add('focusmode');var fid=decodeURIComponent(fq[1]);F.q=fid.toLowerCase();document.getElementById('fQ').value=fid;renderCases();var fe=document.getElementById(fid);if(fe){fe.open=true;}}
+var qs=location.search.match(/[?&]case=([^&]+)/);var want=qs?decodeURIComponent(qs[1]):(location.hash.length>1?decodeURIComponent(location.hash.slice(1)):'');
+if(want){setTimeout(function(){openCase(want);},50);}
+
+(function coldiffs(){
+  var r=[];D.cases.forEach(function(c){c.diffs.forEach(function(d){if(d.kind.indexOf('COLUMN-')===0)r.push([c,d]);});});
+  if(!r.length){document.getElementById('coldiffs').innerHTML='<div class="empty">None &mdash; every report shows the same columns on both screens.</div>';return;}
+  document.getElementById('coldiffs').innerHTML='<table><thead><tr><th>Application</th><th>Constitution</th><th>Dashboard sub-card</th><th>Report</th><th>Where the extra column is</th><th>Column</th></tr></thead><tbody>'+
+    r.map(function(x){return '<tr><td>'+esc(x[0].app)+'</td><td>'+esc(x[0].con)+'</td><td>'+esc(x[0].card)+'</td><td>'+esc(x[0].reportType)+'</td><td>'+
+      (x[1].kind==='COLUMN-ONLY-IN-REPORT'?'Only in the Reports module':'Only on the dashboard popup')+'</td><td><b>'+esc(x[1].column)+'</b></td></tr>';}).join('')+'</tbody></table>';
+})();
+
+(function info(){
+  var h='<table><tbody>'+D.info.map(function(p){return '<tr><td style="width:280px;color:var(--mute)">'+esc(p[0])+'</td><td>'+esc(p[1])+'</td></tr>';}).join('')+'</tbody></table>';
+  document.getElementById('info').innerHTML=h;
+  document.getElementById('foot').innerHTML='Excel workbook: '+esc(D.workbook)+' &nbsp;|&nbsp; CKYC 4.0 Automation Framework';
+})();
+</script>
+</body>
+</html>

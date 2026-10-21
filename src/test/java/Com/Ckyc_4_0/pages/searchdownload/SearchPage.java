@@ -37,6 +37,13 @@ public final class SearchPage {
 					+ " or contains(normalize-space(),'Reference Number')]");
 	public static final By ALERT = By.xpath("//*[@role='alert' or contains(@class,'MuiAlert-root')]");
 
+	/** Options of the open Document Type list (read at run time - never hard-coded). */
+	public static final By DOCUMENT_TYPE_OPTIONS = By.xpath("//ul[@role='listbox']//li[@role='option']");
+	/** Spinner shown while a search is running. */
+	public static final By PROGRESS = By.xpath("//*[@role='progressbar']");
+	/** Validation text under a field (MUI helper text in error state). */
+	public static final By FIELD_ERROR = By.xpath("//p[contains(@class,'Mui-error')]");
+
 	public static final By CUSTOMER_PHOTO_LABEL = By.xpath(
 			"//*[normalize-space()='Customer Photo' or normalize-space()='CUSTOMER PHOTO']");
 	public static final By CUSTOMER_PHOTO_SECTION = By.xpath(

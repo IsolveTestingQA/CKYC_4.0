@@ -59,8 +59,9 @@ public final class ExecutionLogger {
 					+ ".fail,.exception{color:#ff4d4d;font-weight:bold}"
 					+ "pre{white-space:pre-wrap;margin:2px 0}</style></head><body>");
 			htmlOut.write("<h2>CKYC execution log — " + escape(stamp) + "</h2>");
+			htmlOut.write("<p><b>Tested by:</b> " + escape(ConfigReader.testedBy()) + "</p>");
 			STARTED.set(true);
-			info("=== RUN START | runner=" + runnerName + " | text=" + textLog.toAbsolutePath()
+			info("=== RUN START | tested by=" + ConfigReader.testedBy() + " | runner=" + runnerName + " | text=" + textLog.toAbsolutePath()
 					+ " | html=" + htmlLog.toAbsolutePath() + " ===");
 		} catch (IOException e) {
 			STARTED.set(false);

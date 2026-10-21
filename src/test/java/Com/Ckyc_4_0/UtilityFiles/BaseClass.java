@@ -208,6 +208,11 @@ public class BaseClass {
 
 	// -------------------------- Property Getter --------------------------
 	public static String getProperty(String key, String defaultValue) {
+		// a value chosen in the Test Control Panel (or -Dckyc.<key>=...) wins over config.properties
+		String chosen = System.getProperty("ckyc." + key);
+		if (chosen != null && !chosen.isBlank()) {
+			return chosen.trim();
+		}
 		String value = properties.getProperty(key, defaultValue);
 		if (value != null) {
 			return value.trim();
@@ -234,6 +239,11 @@ public class BaseClass {
 		int implicitWait = Integer.parseInt(getProperty("implicitWait", "10"));
 		int pageLoadTimeout = Integer.parseInt(getProperty("pageLoadTimeout", "30"));
 
+		// the application refuses to open when it is already open in another tab of this machine
+		if (ExistingTabCloser.enabled()) {
+			ExistingTabCloser.closeAppTabs(false);
+		}
+
 		logger.info("Launching browser: {}", browserName);
 		driver = DriverFactory.createDriver(browserName, headless, DOWNLOAD_PATH);
 
@@ -249,8 +259,42 @@ public class BaseClass {
 			throw new IllegalArgumentException("Base URL is not specified in config.properties");
 		}
 
-		logger.info("Navigating to: {}", baseUrl);
-		driver.get(baseUrl);
+		String startUrl = loginStartUrl(baseUrl);
+		logger.info("Navigating to: {}", startUrl);
+		driver.get(startUrl);
+		logLoadCheck();
+	}
+
+	/**
+	 * Optional: open the login page directly. DEFAULT OFF - this server answers a direct hit on /login with HTTP 500
+	 * ("Request failed with status code 500" toast), so the host url is opened and the app redirects to /login itself.
+	 * openLoginDirect=true enables it; loginPath (default /login) can be changed.
+	 */
+	private static String loginStartUrl(String baseUrl) {
+		if (!Boolean.parseBoolean(getProperty("openLoginDirect", "false"))) {
+			return baseUrl;
+		}
+		try {
+			String path = java.net.URI.create(baseUrl.trim()).getPath();
+			if (path == null || path.isEmpty() || "/".equals(path)) {
+				return baseUrl.trim().replaceAll("/+$", "") + getProperty("loginPath", "/login");
+			}
+		} catch (IllegalArgumentException ignored) {
+			// keep the url as configured
+		}
+		return baseUrl;
+	}
+
+	/** Evidence for "login page loads twice": how many navigations / tabs the browser really has. */
+	private static void logLoadCheck() {
+		try {
+			Object o = ((JavascriptExecutor) driver).executeScript(
+					"var n=performance.getEntriesByType('navigation');"
+							+ "return 'url='+location.href+' navigationEntries='+n.length+' type='+(n[0]?n[0].type:'?')+' historyLength='+history.length;");
+			logger.info("Login page load check: {} | browserTabs={}", o, driver.getWindowHandles().size());
+		} catch (RuntimeException e) {
+			logger.debug("Login page load check skipped: {}", e.getMessage());
+		}
 	}
 
 	public static WebDriver getDriver() {

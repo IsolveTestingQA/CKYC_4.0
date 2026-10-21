@@ -11,6 +11,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import Com.Ckyc_4_0.pages.SideNavPage;
 import Com.Ckyc_4_0.pages.account.AccountMenuPage;
@@ -23,6 +25,8 @@ import Com.Ckyc_4_0.utils.StepLog;
  * Reusable Maker ↔ Checker switch. One browser. Restores maker with config credentials.
  */
 public final class UserManagementSession {
+	private static final Logger logger = LoggerFactory.getLogger(UserManagementSession.class);
+
 	private UserManagementSession() {}
 
 	public static void restoreMaker() {
@@ -34,16 +38,14 @@ public final class UserManagementSession {
 		if (driver == null) {
 			throw new IllegalStateException("WebDriver is null");
 		}
+		long switchStart = System.currentTimeMillis();
 		String current = UserManagementStore.currentUser();
-		if (!isLoginPage(driver)) {
-			if (username != null && username.equalsIgnoreCase(current)) {
-				return;
-			}
-			if (current == null && username != null
-					&& username.equalsIgnoreCase(UserManagementAccounts.maker())) {
-				UserManagementStore.setCurrentUser(username);
-				return;
-			}
+		if (current == null) {
+			current = ConfigReader.getUsername(); // the Login scenario signed in with the config.properties user
+		}
+		if (!isLoginPage(driver) && username != null && username.equalsIgnoreCase(current)) {
+			UserManagementStore.setCurrentUser(username);
+			return;
 		}
 		if (!isLoginPage(driver)) {
 			logoutQuietly(driver);
@@ -52,17 +54,65 @@ public final class UserManagementSession {
 		BaseClass.typeIntoField(LoginPage.USERNAME_INPUT, username, ConfigReader.getExplicitWait());
 		BaseClass.typeIntoField(LoginPage.PASSWORD_INPUT, password, ConfigReader.getExplicitWait());
 		MasterUiHelper.clickJs(LoginPage.SIGN_IN_BUTTON, ConfigReader.getExplicitWait());
-		MasterUiHelper.sleep(800);
-		PopupHandler.handleActiveSessionIfPresent(driver, ConfigReader.getLoginWait());
+		MasterUiHelper.sleep(400);
+		awaitSignInOutcome(driver);
 		if (isLoginPage(driver)) {
 			BaseClass.typeIntoField(LoginPage.USERNAME_INPUT, username, ConfigReader.getExplicitWait());
 			BaseClass.typeIntoField(LoginPage.PASSWORD_INPUT, password, ConfigReader.getExplicitWait());
 			MasterUiHelper.clickJs(LoginPage.SIGN_IN_BUTTON, ConfigReader.getExplicitWait());
-			PopupHandler.handleActiveSessionIfPresent(driver, ConfigReader.getLoginWait());
+			awaitSignInOutcome(driver);
 		}
 		waitForApp(driver, username);
 		PopupHandler.dismissBrowserPasswordPromptsIfPresent(driver);
 		UserManagementStore.setCurrentUser(username);
+		String label = signedInLabel();
+		logger.info("Signed in as {} (header shows '{}') - switch took {} ms", username, label,
+				System.currentTimeMillis() - switchStart);
+	}
+
+	/**
+	 * Sign In was clicked: returns as soon as the app opens (or the "Active session" dialog has been answered). The old
+	 * code waited the full login wait (20 s) for a dialog that usually never shows, on every Maker/Checker switch.
+	 */
+	private static void awaitSignInOutcome(WebDriver driver) {
+		long deadline = System.currentTimeMillis() + ConfigReader.getLoginWait() * 1000L;
+		while (System.currentTimeMillis() < deadline) {
+			ensureBrowserAlive(driver);
+			if (PopupHandler.isActiveSessionDialogVisible(driver)) {
+				PopupHandler.handleActiveSessionIfPresent(driver, 5);
+				MasterUiHelper.sleep(300);
+				continue;
+			}
+			if (!isLoginPage(driver)) {
+				return;
+			}
+			MasterUiHelper.sleep(250);
+		}
+	}
+
+	/** Stops loops quickly when the browser window was closed (instead of polling a dead session for 20 s). */
+	private static void ensureBrowserAlive(WebDriver driver) {
+		try {
+			driver.getWindowHandle();
+		} catch (org.openqa.selenium.NoSuchSessionException | org.openqa.selenium.NoSuchWindowException e) {
+			throw new IllegalStateException("Browser window was closed during the run - stopping this step", e);
+		}
+	}
+
+
+	/** What the top bar shows for the signed-in user (user badge | role badge), e.g. "AUTO MAKER | Branch Maker". */
+	public static String signedInLabel() {
+		try {
+			Object o = ((JavascriptExecutor) BaseClass.getDriver()).executeScript(
+					"var out=[];var w=window.innerWidth;document.querySelectorAll('body *').forEach(function(e){"
+							+ "if(e.children.length>0)return;var r=e.getBoundingClientRect();"
+							+ "if(r.top<0||r.top>80||r.height<10||r.left<w*0.6)return;"
+							+ "var t=(e.innerText||'').trim();if(t&&t.length<40&&t!=='A'&&out.indexOf(t)<0)out.push(t);});"
+							+ "return out.join(' | ');");
+			return o == null ? "" : String.valueOf(o);
+		} catch (RuntimeException e) {
+			return "";
+		}
 	}
 
 	public static boolean openUsersOrFail(String checkerLabel) {
@@ -150,6 +200,20 @@ public final class UserManagementSession {
 				}
 			} catch (Exception ignored) {}
 			MasterUiHelper.sleep(500);
+		}
+	}
+
+	/**
+	 * Opens User Management &gt; Roles the way a user does: find the nav-bar item and click it. The /admin/roles
+	 * endpoint is used only when the nav item is not available (or did not land on Roles).
+	 */
+	public static void openRolesNavFirst() {
+		WebDriver driver = BaseClass.getDriver();
+		navigateViaSideNav(driver, "Roles");
+		MasterUiHelper.sleep(900);
+		if (!safeUrl(driver).contains("/admin/roles")) {
+			driver.get(ConfigReader.getUrl() + "/admin/roles");
+			MasterUiHelper.sleep(900);
 		}
 	}
 
@@ -243,6 +307,7 @@ public final class UserManagementSession {
 		String dashboard = ConfigReader.getDashboardUrlPath();
 		long deadline = System.currentTimeMillis() + (ConfigReader.getLoginWait() * 1000L);
 		while (System.currentTimeMillis() < deadline) {
+			ensureBrowserAlive(driver);
 			if (!isLoginPage(driver)) {
 				String url = safeUrl(driver);
 				if (url.contains(dashboard) || url.contains("/ckyc/") || url.contains("/admin/")

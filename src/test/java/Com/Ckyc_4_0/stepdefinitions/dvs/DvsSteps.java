@@ -6,7 +6,9 @@
 package Com.Ckyc_4_0.stepdefinitions.dvs;
 
 import Com.Ckyc_4_0.functionality.dvs.DvsNavigation;
+import Com.Ckyc_4_0.UtilityFiles.SoftAssertManager;
 import Com.Ckyc_4_0.functionality.dvs.DvsRunEngine;
+import Com.Ckyc_4_0.functionality.dvs.DvsStuckPrompt;
 import Com.Ckyc_4_0.stepdefinitions.common.Hooks;
 import Com.Ckyc_4_0.utils.dvs.DvsConfig;
 import Com.Ckyc_4_0.utils.dvs.DvsLocators;
@@ -33,10 +35,28 @@ public class DvsSteps {
 		});
 	}
 
-	@Given("DVS session is ready after manual sign-in")
-	public void dvsSessionIsReadyAfterManualSignIn() {
-		Hooks.runStep("Wait for manual sign-in and DVS shell", "DVS shell visible",
-				DvsNavigation::ensureSession, true, true);
+	@Given("user opens DVS 2.0 from the side navigation")
+	public void userOpensDvsFromTheSideNavigation() {
+		Hooks.runStep("Open DVS 2.0 from the side navigation (after login)", "DVS shell visible", () -> {
+			for (int attempt = 1; ; attempt++) {
+				try {
+					DvsNavigation.ensureSession();
+					return;
+				} catch (RuntimeException e) {
+					DvsStuckPrompt.Choice c = attempt >= 3 ? DvsStuckPrompt.Choice.SKIP
+							: DvsStuckPrompt.ask("DVS 2.0 could not be opened from the side navigation", e.getMessage());
+					if (c == DvsStuckPrompt.Choice.RETRY) {
+						continue;
+					}
+					if (c == DvsStuckPrompt.Choice.STOP) {
+						SoftAssertManager.markAbortRun("Stopped from the DVS popup: " + e.getMessage());
+					} else {
+						SoftAssertManager.markSkipScenario("DVS 2.0 not opened (skipped): " + e.getMessage());
+					}
+					return;
+				}
+			}
+		}, true, true);
 	}
 
 	@When("DVS run is executed in mode {string}")

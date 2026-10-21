@@ -265,9 +265,9 @@ Feature File : Features/5_UserManagement/1_Users/7_UsersMakerChecker.feature
 Tags         : @UserManagement @Users @Positive @Smoke @Negative
 
 ACCOUNTS:
-  Maker          : auto / Welcome@123 (Admin role)
-  Primary Checker: shyam / Welcome@123 (Sales Team role)
-  Branch Checker : Nivijay / Welcome@123
+  Maker          : automaker / Welcome@123
+  Primary Checker: autochecker / Welcome@123
+  Branch Checker : autochecker / Welcome@123 (same account)
   Same-role Neg  : admin / KMPL@123 (Admin role — same as maker)
 
 POSITIVE FLOW:
@@ -280,8 +280,8 @@ POSITIVE FLOW:
       - Screenshot before Save → Save → capture toaster → screenshot after
   6.  Maker self-approve attempt → verify blocked
   7.  Same-role admin Checker attempt → verify blocked
-  8.  Independent Checker shyam approves:
-      - Logout auto → Login shyam → /admin/users → Checker mode
+  8.  Independent Checker autochecker approves:
+      - Logout automaker → Login autochecker → /admin/users → Checker mode
       - Find request in queue → verify: Login Name, Type=Create, Maker=auto, Date, Status=PENDING
       - View details → screenshot → Approve → capture toaster → screenshot
   9.  Verify user Active in grid
@@ -290,7 +290,7 @@ POSITIVE FLOW:
       - Check navbar modules match assigned role permissions
       - Screenshot → Logout
   11. Edit TEST AUTO user:
-      - auto edits → Save → shyam approves edit
+      - automaker edits → Save → autochecker approves edit
   12. Lock TEST AUTO user:
       - auto locks → different checker approves → verify Locked status
   13. Unlock TEST AUTO user:
@@ -327,7 +327,7 @@ Feature File : Features/5_UserManagement/2_Roles/8_RolesMakerChecker.feature
 Tags         : @UserManagement @Roles @Positive @Smoke @Negative
 
 ACCOUNTS:
-  Same as Users (auto, shyam, admin)
+  Same as Users (automaker, autochecker, admin)
 
 POSITIVE FLOW:
   1. Open /admin/roles → verify Maker controls displayed
@@ -337,8 +337,8 @@ POSITIVE FLOW:
      - Screenshot → Save → capture toaster
   4. Maker self-approve attempt → blocked
   5. Same-role admin Checker → blocked
-  6. Independent Checker shyam approves:
-     - Logout → Login shyam → /admin/roles → Checker mode
+  6. Independent Checker autochecker approves:
+     - Logout → Login autochecker → /admin/roles → Checker mode
      - Find role → View details → Approve → toaster → screenshot
   7. Configure Permissions on approved role:
      - auto opens role → Configure Permissions
@@ -446,10 +446,10 @@ Step 2 - LOGOUT auto:
   Method     : Avatar button (aria-label="Automation") → Logout menuitem
   Result     : SUCCESS — redirected to login page
 
-Step 3 - LOGIN shyam (Checker):
+Step 3 - LOGIN autochecker (Checker):
   Result     : SUCCESS — dashboard loaded
 
-Step 4 - CHECKER APPROVE (Checker=shyam):
+Step 4 - CHECKER APPROVE (Checker=autochecker):
   Navigate   : /admin/users → Checker mode toggle
   Queue      : 5 pending, testautomcp01 at top
   Verify     : Login Name=testautomcp01, Type=Create, Maker=auto, Status=PENDING

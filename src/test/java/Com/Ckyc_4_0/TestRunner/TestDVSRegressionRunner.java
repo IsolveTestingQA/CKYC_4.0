@@ -11,11 +11,11 @@ import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 
 /**
- * DVS regression run. Sign in manually in the opened browser; the run waits for the DVS shell.
+ * DVS regression run. Login feature runs first (credentials from config), then DVS 2.0 is opened from the side navigation.
  * No scenario retry listener on purpose: a retry would repeat the whole data run.
  */
 @CucumberOptions(
-		features = { "src/test/resources/Features/7_DVS" },
+		features = { "src/test/resources/Features/1_Login", "src/test/resources/Features/7_DVS" },
 		glue = { "Com.Ckyc_4_0.stepdefinitions" },
 		plugin = {
 				"pretty",
@@ -23,15 +23,18 @@ import org.testng.annotations.BeforeSuite;
 				"html:target/cucumber-reports/dvsregression/index.html",
 				"io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"
 		},
-		tags = "@DVS_REG",
+		tags = "@Login or @DVS_REG",
 		monochrome = true,
 		dryRun = false,
 		publish = false)
-public class TestDVSRegressionRunner extends AbstractTestNGCucumberTests {
+public class TestDVSRegressionRunner extends CkycCucumberTests {
+
+	/** true = record the browser window of THIS runner from the moment it opens (default off; the Test Control Panel toggle overrides). */
+	private static final boolean RECORD_SCREEN = false;
 
 	@BeforeSuite(alwaysRun = true)
 	public void setUpSuite() {
-		RunnerSuiteSupport.beforeSuite("TestDVSRegressionRunner", "DVS regression");
+		RunnerSuiteSupport.beforeSuite("TestDVSRegressionRunner", "DVS regression", RECORD_SCREEN);
 	}
 
 	@AfterSuite(alwaysRun = true)
